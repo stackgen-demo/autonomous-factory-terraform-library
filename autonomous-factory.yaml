@@ -1,0 +1,39 @@
+version: 1
+policy_owner: platform-team
+description: >-
+  Approved dependency-to-infrastructure mappings for participating Autonomous
+  Factory applications. Application repositories may declare identity,
+  environment eligibility, and requested capabilities, but never module,
+  template, IAM, or catalog-version selection.
+dependency_mappings:
+  - catalog_entry: aws-eks-sqs
+    catalog_path: catalog/aws-eks-sqs.yaml
+    signals:
+      packages:
+        - "@aws-sdk/client-sqs"
+      imports:
+        - SQSClient
+        - GetQueueAttributesCommand
+        - SendMessageCommand
+      environment_variables:
+        - ORDERS_QUEUE_URL
+  - catalog_entry: aws-eks-sns
+    catalog_path: catalog/aws-eks-sns.yaml
+    signals:
+      packages:
+        - "@aws-sdk/client-sns"
+      imports:
+        - SNSClient
+        - PublishCommand
+      environment_variables:
+        - EVENTS_TOPIC_ARN
+  - catalog_entry: aws-eks-cloudwatch-logs
+    catalog_path: catalog/aws-eks-cloudwatch-logs.yaml
+    signals:
+      packages:
+        - "@aws-sdk/client-cloudwatch-logs"
+      imports:
+        - CloudWatchLogsClient
+        - PutLogEventsCommand
+      environment_variables:
+        - AUDIT_LOG_GROUP_NAME
