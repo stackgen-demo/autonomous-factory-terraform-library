@@ -1,0 +1,19 @@
+module "orders_queue" {
+  source = "$${module_source}"
+
+  queue_name            = "autonomous-factory-orders-dev"
+  cluster_name          = var.cluster_name
+  namespace             = kubernetes_namespace_v1.application.metadata[0].name
+  service_account_name  = kubernetes_service_account_v1.application.metadata[0].name
+  pod_identity_role_arn = aws_iam_role.application.arn
+  tags = {
+    application = "autonomous-factory-demo"
+    environment = "dev"
+    managed_by  = "aiden"
+  }
+}
+
+output "orders_queue_url" {
+  value = module.orders_queue.queue_url
+}
+
