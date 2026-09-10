@@ -9,7 +9,7 @@ signals:
   environment_variables:
     - "ORDERS_QUEUE_URL"
 module:
-  source: "git::https://github.com/REPLACE_ORG/autonomous-factory-terraform-library.git//modules/aws-eks-sqs?ref=v1.0.0"
+  source: "git::https://github.com/stackgen-demo/autonomous-factory-terraform-library.git//modules/aws-eks-sqs?ref=v1.0.0"
   template: templates/aws/eks-sqs-dependency/dependency.tf.tftpl
 helm_values_template: templates/aws/eks-sqs-dependency/values-dev.yaml.tftpl
 required_iam_actions:
@@ -20,4 +20,3 @@ validation:
   - "tofu init -backend=false"
   - "tofu validate"
   - "helm lint ./helm/autonomous-factory-demo"
-
