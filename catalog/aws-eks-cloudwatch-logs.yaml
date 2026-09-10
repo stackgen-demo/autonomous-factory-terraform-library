@@ -1,0 +1,24 @@
+id: aws-eks-cloudwatch-logs
+version: 1.2.0
+signals:
+  packages:
+    - "@aws-sdk/client-cloudwatch-logs"
+  imports:
+    - "CloudWatchLogsClient"
+    - "PutLogEventsCommand"
+  environment_variables:
+    - "AUDIT_LOG_GROUP_NAME"
+module:
+  source: "git::https://github.com/stackgen-demo/autonomous-factory-terraform-library.git//modules/aws-eks-cloudwatch-logs?ref=v1.2.0"
+  template: templates/aws/eks-cloudwatch-logs-dependency/dependency.tf.tftpl
+deployment:
+  manifest_env_template: templates/aws/eks-cloudwatch-logs-dependency/deployment-env.yaml.tftpl
+required_iam_actions:
+  - "logs:CreateLogStream"
+  - "logs:DescribeLogStreams"
+  - "logs:PutLogEvents"
+validation:
+  - "tofu fmt -check"
+  - "tofu init -backend=false"
+  - "tofu validate"
+  - "helm lint ./helm/autonomous-factory-demo"
