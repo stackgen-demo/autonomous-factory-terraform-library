@@ -1,0 +1,16 @@
+module "audit_log_group" {
+  source = "$${module_source}"
+
+  log_group_name        = "/autonomous-factory/dev/audit-events"
+  pod_identity_role_arn = aws_iam_role.application.arn
+  retention_in_days     = 7
+  tags = {
+    application = "autonomous-factory-demo"
+    environment = "dev"
+    managed_by  = "aiden"
+  }
+}
+
+output "audit_log_group_name" {
+  value = module.audit_log_group.log_group_name
+}
