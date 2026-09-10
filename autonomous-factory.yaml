@@ -5,6 +5,23 @@ description: >-
   Factory applications. Application repositories may declare identity,
   environment eligibility, and requested capabilities, but never module,
   template, IAM, or catalog-version selection.
+delivery_pipeline:
+  identifier: autonomous_factory_dev_pipeline
+  template_path: templates/harness/autonomous-factory-dev-pipeline.yaml
+  harness_schema: pipeline
+  source_repository: stackgen-demo/autonomous-factory-demo
+  source_branch: main
+  source_file_path: .harness/pipelines/autonomous-factory-dev.yaml
+  connector_ref: autonomous_factory_github
+  validation:
+    - harness_yaml_schema
+    - harness_pipeline_dry_run
+  immutable_scope:
+    organization: default
+    project: cloudos_software_factory
+    delegate_selector: demo-env
+    environment: dev
+    cluster: ai-sre-demo
 dependency_mappings:
   - catalog_entry: aws-eks-sqs
     catalog_path: catalog/aws-eks-sqs.yaml

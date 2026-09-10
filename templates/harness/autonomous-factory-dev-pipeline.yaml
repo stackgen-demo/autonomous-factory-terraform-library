@@ -1,0 +1,251 @@
+pipeline:
+  name: Autonomous Factory Dev Pipeline
+  identifier: autonomous_factory_dev_pipeline
+  projectIdentifier: cloudos_software_factory
+  orgIdentifier: default
+  description: >-
+    Approved Dev-only, merge-driven pipeline. It tests and publishes the application image,
+    uses native Harness Terraform plan/apply, deploys through a native Kubernetes
+    rolling deployment, then verifies live readiness.
+  tags:
+    managed-by: autonomous-factory-template
+    template-owner: platform-team
+    target: dev
+    cluster: ai-sre-demo
+    namespace: autonomous-factory-dev
+  variables:
+    - name: commit_sha
+      type: String
+      description: Immutable commit SHA produced by the merged application or IaC PR.
+      required: true
+      value: <+input>
+  stages:
+    - stage:
+        name: Build and Publish
+        identifier: build_and_publish
+        description: Builds the immutable application image after its merge is attested.
+        type: Custom
+        spec:
+          execution:
+            steps:
+              - step:
+                  name: Build and Unit Test Node Service
+                  identifier: build_and_unit_test_node_service
+                  type: ShellScript
+                  timeout: 15m
+                  spec:
+                    shell: Bash
+                    onDelegate: true
+                    executionTarget: {}
+                    delegateSelectors:
+                      - demo-env
+                    source:
+                      type: Inline
+                      spec:
+                        script: |
+                          set -euo pipefail
+                          job=autonomous-factory-build
+                          kubectl -n harness-delegate-ng delete job "$job" --ignore-not-found --wait=true
+                          kubectl -n harness-delegate-ng apply -f - <<'MANIFEST'
+                          apiVersion: batch/v1
+                          kind: Job
+                          metadata:
+                            name: autonomous-factory-build
+                            labels:
+                              app.kubernetes.io/part-of: autonomous-factory-demo
+                              autonomous-factory.stage: build
+                          spec:
+                            backoffLimit: 0
+                            ttlSecondsAfterFinished: 900
+                            template:
+                              spec:
+                                serviceAccountName: demo-env
+                                restartPolicy: Never
+                                volumes:
+                                  - name: workspace
+                                    emptyDir: {}
+                                initContainers:
+                                  - name: checkout
+                                    image: alpine/git:v2.45.2
+                                    env:
+                                      - name: GITHUB_TOKEN
+                                        valueFrom:
+                                          secretKeyRef:
+                                            name: autonomous-factory-github
+                                            key: token
+                                      - name: COMMIT_SHA
+                                        value: "<+pipeline.variables.commit_sha>"
+                                    command: ["/bin/sh", "-ec"]
+                                    args:
+                                      - |
+                                        git clone --depth 1 https://x-access-token:${GITHUB_TOKEN}@github.com/stackgen-demo/autonomous-factory-demo.git /workspace
+                                        cd /workspace
+                                        git fetch --depth 1 origin "${COMMIT_SHA}"
+                                        git checkout --detach FETCH_HEAD
+                                    volumeMounts:
+                                      - name: workspace
+                                        mountPath: /workspace
+                                  - name: test
+                                    image: node:20-alpine
+                                    command: ["/bin/sh", "-ec"]
+                                    args: ["cd /workspace/app && npm ci && npm test"]
+                                    volumeMounts:
+                                      - name: workspace
+                                        mountPath: /workspace
+                                containers:
+                                  - name: publish
+                                    image: gcr.io/kaniko-project/executor:v1.23.2-debug
+                                    args:
+                                      - --context=dir:///workspace/app
+                                      - --dockerfile=/workspace/app/Dockerfile
+                                      - --destination=697091778198.dkr.ecr.us-west-2.amazonaws.com/autonomous-factory-demo:<+pipeline.variables.commit_sha>
+                                    env:
+                                      - name: AWS_REGION
+                                        value: us-west-2
+                                      - name: AWS_SDK_LOAD_CONFIG
+                                        value: "true"
+                                    volumeMounts:
+                                      - name: workspace
+                                        mountPath: /workspace
+                          MANIFEST
+                          kubectl -n harness-delegate-ng wait --for=condition=complete "job/$job" --timeout=12m || {
+                            kubectl -n harness-delegate-ng logs "job/$job" --all-containers=true --tail=200
+                            exit 1
+                          }
+                          kubectl -n harness-delegate-ng logs "job/$job" --all-containers=true --tail=200
+                    environmentVariables: []
+                    outputVariables: []
+        failureStrategies:
+          - onFailure:
+              errors:
+                - AllErrors
+              action:
+                type: MarkAsFailure
+    - stage:
+        name: Terraform Provisioning
+        identifier: terraform_provisioning
+        description: Uses the native Harness Terraform steps against the reviewed Dev configuration.
+        type: Custom
+        spec:
+          execution:
+            steps:
+              - step:
+                  name: Terraform Plan
+                  identifier: terraform_plan
+                  type: TerraformPlan
+                  timeout: 15m
+                  spec:
+                    provisionerIdentifier: autonomous_factory_dev
+                    delegateSelectors:
+                      - demo-env
+                    configuration:
+                      command: Apply
+                      configFiles:
+                        store:
+                          type: Github
+                          spec:
+                            connectorRef: autonomous_factory_github
+                            repoName: autonomous-factory-demo
+                            gitFetchType: Branch
+                            branch: main
+                            folderPath: infra
+                        moduleSource:
+                          useConnectorCredentials: true
+                      secretManagerRef: harnessSecretManager
+                      skipStateStorage: false
+              - step:
+                  name: Terraform Apply
+                  identifier: terraform_apply
+                  type: TerraformApply
+                  timeout: 20m
+                  spec:
+                    provisionerIdentifier: autonomous_factory_dev
+                    delegateSelectors:
+                      - demo-env
+                    configuration:
+                      type: InheritFromPlan
+        failureStrategies:
+          - onFailure:
+              errors:
+                - AllErrors
+              action:
+                type: MarkAsFailure
+    - stage:
+        name: Deploy to Dev
+        identifier: deploy_to_dev
+        description: Uses the native Kubernetes rolling deployment against ai-sre-demo only.
+        type: Deployment
+        spec:
+          deploymentType: Kubernetes
+          service:
+            serviceRef: autonomous_factory_demo
+            serviceInputs:
+              serviceDefinition:
+                type: Kubernetes
+                spec:
+                  artifacts:
+                    primary:
+                      primaryArtifactRef: autonomous_factory_demo_image
+                      sources:
+                        - identifier: autonomous_factory_demo_image
+                          type: Ecr
+                          spec:
+                            tag: <+pipeline.variables.commit_sha>
+          environment:
+            environmentRef: autonomous_factory_dev
+            deployToAll: false
+            infrastructureDefinitions:
+              - identifier: autonomous_factory_dev_native_eks
+          execution:
+            steps:
+              - step:
+                  name: Native Kubernetes Rolling Deploy
+                  identifier: native_kubernetes_rolling_deploy
+                  type: K8sRollingDeploy
+                  timeout: 15m
+                  spec:
+                    skipDryRun: false
+                    pruningEnabled: false
+              - step:
+                  name: Deterministic Heartbeat
+                  identifier: deterministic_heartbeat
+                  type: ShellScript
+                  timeout: 5m
+                  spec:
+                    shell: Bash
+                    onDelegate: true
+                    executionTarget: {}
+                    delegateSelectors:
+                      - demo-env
+                    source:
+                      type: Inline
+                      spec:
+                        script: |
+                          set -euo pipefail
+                          namespace=autonomous-factory-dev
+                          service=autonomous-factory-demo
+                          kubectl -n "$namespace" rollout status deployment/$service --timeout=180s
+                          kubectl -n "$namespace" get endpoints "$service" -o jsonpath='{.subsets[*].addresses[*].ip}' | grep -q .
+                          kubectl -n "$namespace" delete pod autonomous-factory-heartbeat --ignore-not-found --wait=true
+                          kubectl -n "$namespace" run autonomous-factory-heartbeat --restart=Never --image=curlimages/curl:8.10.1 -- \
+                            curl -fsS --max-time 10 "http://${service}.${namespace}.svc.cluster.local:3000/readyz"
+                          kubectl -n "$namespace" wait --for=jsonpath='{.status.phase}'=Succeeded pod/autonomous-factory-heartbeat --timeout=60s
+                          kubectl -n "$namespace" logs autonomous-factory-heartbeat
+                          kubectl -n "$namespace" delete pod autonomous-factory-heartbeat --ignore-not-found --wait=true
+                          echo 'HEARTBEAT_STATUS: PASS'
+                    environmentVariables: []
+                    outputVariables: []
+            rollbackSteps:
+              - step:
+                  name: Native Kubernetes Rolling Rollback
+                  identifier: native_kubernetes_rolling_rollback
+                  type: K8sRollingRollback
+                  timeout: 15m
+                  spec:
+                    pruningEnabled: false
+        failureStrategies:
+          - onFailure:
+              errors:
+                - AllErrors
+              action:
+                type: StageRollback
