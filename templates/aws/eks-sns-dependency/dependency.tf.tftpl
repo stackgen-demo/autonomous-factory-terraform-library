@@ -1,0 +1,15 @@
+module "events_topic" {
+  source = "$${module_source}"
+
+  topic_name            = "autonomous-factory-events-dev"
+  pod_identity_role_arn = aws_iam_role.application.arn
+  tags = {
+    application = "autonomous-factory-demo"
+    environment = "dev"
+    managed_by  = "aiden"
+  }
+}
+
+output "events_topic_arn" {
+  value = module.events_topic.topic_arn
+}
