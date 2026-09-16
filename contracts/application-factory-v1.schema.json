@@ -79,7 +79,7 @@
         "harness": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["accountId", "delegateSelector", "githubConnectorRef", "kubernetesConnectorRef"],
+          "required": ["accountId", "delegateSelector", "githubConnectorRef", "awsConnectorRef", "kubernetesConnectorRef"],
           "properties": {
             "accountId": { "type": "string", "minLength": 1 },
             "organization": { "type": "string", "default": "default" },
@@ -88,6 +88,7 @@
             "pipelineDefinitionPath": { "type": "string", "default": ".harness/pipelines/dev.yaml" },
             "delegateSelector": { "type": "string", "minLength": 1 },
             "githubConnectorRef": { "type": "string", "minLength": 1 },
+            "awsConnectorRef": { "type": "string", "minLength": 1 },
             "kubernetesConnectorRef": { "type": "string", "minLength": 1 },
             "serviceRef": { "type": "string" },
             "environmentRef": { "type": "string", "default": "dev" },

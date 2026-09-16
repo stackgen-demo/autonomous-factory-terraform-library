@@ -8,7 +8,7 @@ Required platform facts:
 - AWS account, region, existing EKS cluster, target namespace, and an existing S3 state bucket.
 - Terraform root and unique state key. Use one key per application and environment.
 - Harness account and delegate selector. Organization defaults to `default`; project defaults to `default` only when the application does not specify one.
-- Existing Harness GitHub and Kubernetes connector references. The Kubernetes connector must target the declared EKS cluster.
+- Existing Harness GitHub, AWS/ECR, and Kubernetes connector references. The AWS connector must be able to read the declared ECR repository, and the Kubernetes connector must target the declared EKS cluster.
 - Harness service, Dev environment, and infrastructure identifiers. Create them during onboarding if absent, then verify them by readback.
 - Application build context, Dockerfile, test image/command, ECR repository, deployment manifest path, and Backstage catalog path.
 - Build-job namespace and service account, plus the name of a Kubernetes Secret whose `token` key can clone the application repository. These are references only; never store the token in the contract.
