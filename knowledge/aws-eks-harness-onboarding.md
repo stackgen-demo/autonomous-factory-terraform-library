@@ -19,4 +19,6 @@ Use the repository's onboarding adapter to convert this contract into non-secret
 
 Use `templates/harness/aws-eks-dev-pipeline-v2.yaml.tftpl` as structural guidance. Adapt its build job and placeholders from the application contract; change the test image and command to match the repository. Preserve native `TerraformPlan`, `TerraformApply`, and `K8sRollingDeploy` steps, each stage's failure strategy, and the immutable `commit_sha` input. The build uses that immutable application SHA; Terraform reads the merged delivery files from the repository's default branch because the original application SHA predates the generated IaC PR. A successful rolling deployment is the delivery success criterion.
 
+Build and test run from a clean checkout. Treat `runtime.testCommand` as the test invocation, not proof that dependencies are already present. Inspect the build context and prepend its deterministic locked dependency installation when required—for example, `npm ci` when `package-lock.json` exists—before running the declared test command.
+
 Capability mappings remain registry-driven. If a detected AWS dependency is absent from `contracts/autonomous-factory-v4.json`, block with the missing capability ID; do not improvise an ungoverned module.
