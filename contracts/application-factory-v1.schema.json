@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://stackgen.com/autonomous-factory/application-factory-v1.schema.json",
+  "title": "Autonomous Factory application contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "factory.stackgen.com/v1alpha1" },
+    "kind": { "const": "ApplicationFactoryConfig" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "owner"],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$" },
+        "owner": { "type": "string", "minLength": 1 }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "runtime", "aws", "iac", "delivery", "harness", "eligibleCapabilities"],
+      "properties": {
+        "repository": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["fullName"],
+          "properties": {
+            "fullName": { "type": "string", "pattern": "^[^/]+/[^/]+$" },
+            "defaultBranch": { "type": "string", "default": "main" }
+          }
+        },
+        "runtime": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["buildContext", "dockerfile"],
+          "properties": {
+            "buildContext": { "type": "string" },
+            "dockerfile": { "type": "string" },
+            "testCommand": { "type": "string" }
+          }
+        },
+        "aws": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["accountId", "region", "eksCluster", "namespace"],
+          "properties": {
+            "accountId": { "type": "string", "pattern": "^[0-9]{12}$" },
+            "region": { "type": "string", "pattern": "^[a-z]{2}-[a-z]+-[0-9]+$" },
+            "eksCluster": { "type": "string", "minLength": 1 },
+            "namespace": { "type": "string", "pattern": "^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?$" },
+            "terraformStateBucket": { "type": "string", "minLength": 3 },
+            "terraformStateKey": { "type": "string", "minLength": 1 }
+          }
+        },
+        "iac": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["terraformRoot"],
+          "properties": {
+            "terraformRoot": { "type": "string", "default": "infra" }
+          }
+        },
+        "delivery": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["manifestPath", "catalogPath"],
+          "properties": {
+            "manifestPath": { "type": "string" },
+            "catalogPath": { "type": "string", "default": "catalog-info.yaml" }
+          }
+        },
+        "harness": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["accountId", "delegateSelector", "githubConnectorRef", "kubernetesConnectorRef"],
+          "properties": {
+            "accountId": { "type": "string", "minLength": 1 },
+            "organization": { "type": "string", "default": "default" },
+            "project": { "type": "string", "default": "default" },
+            "pipeline": { "type": "string" },
+            "pipelineDefinitionPath": { "type": "string", "default": ".harness/pipelines/dev.yaml" },
+            "delegateSelector": { "type": "string", "minLength": 1 },
+            "githubConnectorRef": { "type": "string", "minLength": 1 },
+            "kubernetesConnectorRef": { "type": "string", "minLength": 1 },
+            "serviceRef": { "type": "string" },
+            "environmentRef": { "type": "string", "default": "dev" },
+            "infrastructureRef": { "type": "string" }
+          }
+        },
+        "linear": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "teamKey": { "type": "string" },
+            "issueKeyPattern": { "type": "string" }
+          }
+        },
+        "eligibleCapabilities": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^aws-eks-[a-z0-9-]+$" }
+        }
+      }
+    }
+  }
+}
