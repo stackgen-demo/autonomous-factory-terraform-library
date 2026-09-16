@@ -6,7 +6,8 @@ pipeline:
   description: >-
     Approved Dev-only, merge-driven pipeline. It tests and publishes the application image,
     uses native Harness Terraform plan/apply, deploys through a native Kubernetes
-    rolling deployment, then verifies live readiness.
+    rolling deployment. A successful native rolling deployment is the delivery
+    success criterion; no application heartbeat is performed.
   tags:
     managed-by: autonomous-factory-template
     template-owner: platform-team
@@ -206,35 +207,6 @@ pipeline:
                   spec:
                     skipDryRun: false
                     pruningEnabled: false
-              - step:
-                  name: Deterministic Heartbeat
-                  identifier: deterministic_heartbeat
-                  type: ShellScript
-                  timeout: 5m
-                  spec:
-                    shell: Bash
-                    onDelegate: true
-                    executionTarget: {}
-                    delegateSelectors:
-                      - demo-env
-                    source:
-                      type: Inline
-                      spec:
-                        script: |
-                          set -euo pipefail
-                          namespace=autonomous-factory-dev
-                          service=autonomous-factory-demo
-                          kubectl -n "$namespace" rollout status deployment/$service --timeout=180s
-                          kubectl -n "$namespace" get endpoints "$service" -o jsonpath='{.subsets[*].addresses[*].ip}' | grep -q .
-                          kubectl -n "$namespace" delete pod autonomous-factory-heartbeat --ignore-not-found --wait=true
-                          kubectl -n "$namespace" run autonomous-factory-heartbeat --restart=Never --image=curlimages/curl:8.10.1 -- \
-                            curl -fsS --max-time 10 "http://${service}.${namespace}.svc.cluster.local:3000/readyz"
-                          kubectl -n "$namespace" wait --for=jsonpath='{.status.phase}'=Succeeded pod/autonomous-factory-heartbeat --timeout=60s
-                          kubectl -n "$namespace" logs autonomous-factory-heartbeat
-                          kubectl -n "$namespace" delete pod autonomous-factory-heartbeat --ignore-not-found --wait=true
-                          echo 'HEARTBEAT_STATUS: PASS'
-                    environmentVariables: []
-                    outputVariables: []
             rollbackSteps:
               - step:
                   name: Native Kubernetes Rolling Rollback

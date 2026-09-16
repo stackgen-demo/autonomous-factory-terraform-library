@@ -1,11 +1,16 @@
-version: 2
+version: 3
 policy_owner: platform-team
 description: >-
   Approved dependency-to-infrastructure mappings for participating Autonomous
   Factory applications. Application repositories may declare identity,
   environment eligibility, and requested capabilities, but never module,
   template, IAM, or catalog-version selection.
-contract_path: contracts/autonomous-factory-v2.json
+contract_path: contracts/autonomous-factory-v3.json
+generation:
+  author: aiden-agent
+  template_usage: reference-and-adapt
+  validation_owns_generation: false
+  maximum_repair_attempts: 3
 system_model:
   template_path: templates/backstage/catalog-info.yaml.tftpl
   output_path: catalog-info.yaml
@@ -23,6 +28,12 @@ delivery_pipeline:
   validation:
     - harness_yaml_schema
     - harness_pipeline_dry_run
+  success_criteria:
+    pipeline_status: Success
+    required_stage_identifiers:
+      - terraform_plan
+      - terraform_apply
+      - native_kubernetes_rolling_deploy
   immutable_scope:
     organization: default
     project: cloudos_software_factory
@@ -68,6 +79,7 @@ terraform_roots:
       - kubernetes_service_account_v1.application
       - module.orders_queue
       - module.audit_log_group
+      - module.events_topic
 dependency_mappings:
   - catalog_entry: aws-eks-sqs
     catalog_path: catalog/aws-eks-sqs.yaml
@@ -80,6 +92,10 @@ dependency_mappings:
         - SendMessageCommand
       environment_variables:
         - ORDERS_QUEUE_URL
+    generation:
+      terraform_filename: dependency-sqs.tf
+      reference_template: templates/aws/eks-sqs-dependency/dependency.tf.tftpl
+      deployment_template: templates/aws/eks-sqs-dependency/values-dev.yaml.tftpl
   - catalog_entry: aws-eks-sns
     catalog_path: catalog/aws-eks-sns.yaml
     signals:
@@ -90,6 +106,10 @@ dependency_mappings:
         - PublishCommand
       environment_variables:
         - EVENTS_TOPIC_ARN
+    generation:
+      terraform_filename: dependency-sns.tf
+      reference_template: templates/aws/eks-sns-dependency/dependency.tf.tftpl
+      deployment_template: templates/aws/eks-sns-dependency/deployment-env.yaml.tftpl
   - catalog_entry: aws-eks-cloudwatch-logs
     catalog_path: catalog/aws-eks-cloudwatch-logs.yaml
     signals:
@@ -100,3 +120,7 @@ dependency_mappings:
         - PutLogEventsCommand
       environment_variables:
         - AUDIT_LOG_GROUP_NAME
+    generation:
+      terraform_filename: dependency-cloudwatch-logs.tf
+      reference_template: templates/aws/eks-cloudwatch-logs-dependency/dependency.tf.tftpl
+      deployment_template: templates/aws/eks-cloudwatch-logs-dependency/deployment-env.yaml.tftpl

@@ -1,5 +1,6 @@
 id: aws-eks-sns
 version: 1.1.0
+display_name: Amazon SNS
 signals:
   packages:
     - "@aws-sdk/client-sns"
@@ -11,6 +12,12 @@ signals:
 module:
   source: "git::https://github.com/stackgen-demo/autonomous-factory-terraform-library.git//modules/aws-eks-sns?ref=v1.1.0"
   template: templates/aws/eks-sns-dependency/dependency.tf.tftpl
+generation:
+  terraform_filename: dependency-sns.tf
+  allowed_paths:
+    - infra/dependency-sns.tf
+    - harness/manifests/autonomous-factory-demo.yaml
+    - catalog-info.yaml
 deployment:
   manifest_env_template: templates/aws/eks-sns-dependency/deployment-env.yaml.tftpl
 required_iam_actions:
