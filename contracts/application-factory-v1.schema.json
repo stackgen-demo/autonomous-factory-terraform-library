@@ -38,7 +38,12 @@
           "properties": {
             "buildContext": { "type": "string" },
             "dockerfile": { "type": "string" },
-            "testCommand": { "type": "string" }
+            "testCommand": { "type": "string" },
+            "testImage": { "type": "string" },
+            "ecrRepository": { "type": "string" },
+            "buildNamespace": { "type": "string", "default": "harness-delegate-ng" },
+            "buildServiceAccount": { "type": "string" },
+            "githubTokenSecret": { "type": "string" }
           }
         },
         "aws": {

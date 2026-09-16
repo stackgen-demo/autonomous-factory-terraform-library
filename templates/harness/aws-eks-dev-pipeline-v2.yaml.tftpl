@@ -14,6 +14,88 @@ pipeline:
       value: <+input>
   stages:
     - stage:
+        name: Build and Publish
+        identifier: build_and_publish
+        type: Custom
+        spec:
+          execution:
+            steps:
+              - step:
+                  name: Test and Publish Container
+                  identifier: test_and_publish_container
+                  type: ShellScript
+                  timeout: 15m
+                  spec:
+                    shell: Bash
+                    onDelegate: true
+                    delegateSelectors: [__HARNESS_DELEGATE_SELECTOR__]
+                    source:
+                      type: Inline
+                      spec:
+                        script: |
+                          set -euo pipefail
+                          job=__APPLICATION_NAME__-build
+                          kubectl -n __BUILD_NAMESPACE__ delete job "$job" --ignore-not-found --wait=true
+                          kubectl -n __BUILD_NAMESPACE__ apply -f - <<'MANIFEST'
+                          apiVersion: batch/v1
+                          kind: Job
+                          metadata:
+                            name: __APPLICATION_NAME__-build
+                          spec:
+                            backoffLimit: 0
+                            ttlSecondsAfterFinished: 900
+                            template:
+                              spec:
+                                serviceAccountName: __BUILD_SERVICE_ACCOUNT__
+                                restartPolicy: Never
+                                volumes:
+                                  - name: workspace
+                                    emptyDir: {}
+                                initContainers:
+                                  - name: checkout
+                                    image: alpine/git:v2.45.2
+                                    env:
+                                      - name: GITHUB_TOKEN
+                                        valueFrom:
+                                          secretKeyRef:
+                                            name: __GITHUB_TOKEN_SECRET__
+                                            key: token
+                                      - name: COMMIT_SHA
+                                        value: "<+pipeline.variables.commit_sha>"
+                                    command: ["/bin/sh", "-ec"]
+                                    args:
+                                      - |
+                                        git clone --depth 1 https://x-access-token:${GITHUB_TOKEN}@github.com/__GITHUB_REPOSITORY__.git /workspace
+                                        cd /workspace
+                                        git fetch --depth 1 origin "${COMMIT_SHA}"
+                                        git checkout --detach FETCH_HEAD
+                                    volumeMounts:
+                                      - name: workspace
+                                        mountPath: /workspace
+                                  - name: test
+                                    image: __TEST_IMAGE__
+                                    command: ["/bin/sh", "-ec"]
+                                    args: ["cd /workspace/__BUILD_CONTEXT__ && __TEST_COMMAND__"]
+                                    volumeMounts:
+                                      - name: workspace
+                                        mountPath: /workspace
+                                containers:
+                                  - name: publish
+                                    image: gcr.io/kaniko-project/executor:v1.23.2-debug
+                                    args:
+                                      - --context=dir:///workspace/__BUILD_CONTEXT__
+                                      - --dockerfile=/workspace/__DOCKERFILE__
+                                      - --destination=__AWS_ACCOUNT_ID__.dkr.ecr.__AWS_REGION__.amazonaws.com/__ECR_REPOSITORY__:<+pipeline.variables.commit_sha>
+                                    volumeMounts:
+                                      - name: workspace
+                                        mountPath: /workspace
+                          MANIFEST
+                          kubectl -n __BUILD_NAMESPACE__ wait --for=condition=complete "job/$job" --timeout=12m || {
+                            kubectl -n __BUILD_NAMESPACE__ logs "job/$job" --all-containers=true --tail=200
+                            exit 1
+                          }
+                          kubectl -n __BUILD_NAMESPACE__ logs "job/$job" --all-containers=true --tail=200
+    - stage:
         name: Terraform Provisioning
         identifier: terraform_provisioning
         type: Custom
@@ -61,6 +143,18 @@ pipeline:
           deploymentType: Kubernetes
           service:
             serviceRef: __HARNESS_SERVICE_REF__
+            serviceInputs:
+              serviceDefinition:
+                type: Kubernetes
+                spec:
+                  artifacts:
+                    primary:
+                      primaryArtifactRef: __HARNESS_PRIMARY_ARTIFACT_REF__
+                      sources:
+                        - identifier: __HARNESS_PRIMARY_ARTIFACT_REF__
+                          type: Ecr
+                          spec:
+                            tag: <+pipeline.variables.commit_sha>
           environment:
             environmentRef: __HARNESS_ENVIRONMENT_REF__
             deployToAll: false
