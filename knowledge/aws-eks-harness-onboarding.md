@@ -17,6 +17,6 @@ The application repository declares these non-secret values in `.autonomous-fact
 
 Use the repository's onboarding adapter to convert this contract into non-secret Terraform inputs. Do not maintain a second handwritten copy of application values.
 
-Use `templates/harness/aws-eks-dev-pipeline-v2.yaml.tftpl` as structural guidance. Adapt its build job and placeholders from the application contract; change the test image and command to match the repository. Preserve native `TerraformPlan`, `TerraformApply`, and `K8sRollingDeploy` steps and the immutable `commit_sha` input. A successful rolling deployment is the delivery success criterion.
+Use `templates/harness/aws-eks-dev-pipeline-v2.yaml.tftpl` as structural guidance. Adapt its build job and placeholders from the application contract; change the test image and command to match the repository. Preserve native `TerraformPlan`, `TerraformApply`, and `K8sRollingDeploy` steps, each stage's failure strategy, and the immutable `commit_sha` input. The build uses that immutable application SHA; Terraform reads the merged delivery files from the repository's default branch because the original application SHA predates the generated IaC PR. A successful rolling deployment is the delivery success criterion.
 
 Capability mappings remain registry-driven. If a detected AWS dependency is absent from `contracts/autonomous-factory-v4.json`, block with the missing capability ID; do not improvise an ungoverned module.
