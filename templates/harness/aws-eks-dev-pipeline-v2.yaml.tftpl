@@ -1,0 +1,78 @@
+pipeline:
+  name: __APPLICATION_TITLE__ Dev Delivery
+  identifier: __HARNESS_PIPELINE_ID__
+  projectIdentifier: __HARNESS_PROJECT_ID__
+  orgIdentifier: __HARNESS_ORG_ID__
+  description: Native Terraform plan/apply and Kubernetes rolling deployment for Dev.
+  tags:
+    managed-by: autonomous-factory
+    target: dev
+  variables:
+    - name: commit_sha
+      type: String
+      required: true
+      value: <+input>
+  stages:
+    - stage:
+        name: Terraform Provisioning
+        identifier: terraform_provisioning
+        type: Custom
+        spec:
+          execution:
+            steps:
+              - step:
+                  name: Terraform Plan
+                  identifier: terraform_plan
+                  type: TerraformPlan
+                  timeout: 15m
+                  spec:
+                    provisionerIdentifier: __TERRAFORM_PROVISIONER_ID__
+                    delegateSelectors: [__HARNESS_DELEGATE_SELECTOR__]
+                    configuration:
+                      command: Apply
+                      configFiles:
+                        store:
+                          type: Github
+                          spec:
+                            connectorRef: __HARNESS_GITHUB_CONNECTOR_REF__
+                            repoName: __GITHUB_REPOSITORY_NAME__
+                            gitFetchType: Commit
+                            commitSha: <+pipeline.variables.commit_sha>
+                            folderPath: __TERRAFORM_ROOT__
+                        moduleSource:
+                          useConnectorCredentials: true
+                      secretManagerRef: harnessSecretManager
+                      skipStateStorage: false
+              - step:
+                  name: Terraform Apply
+                  identifier: terraform_apply
+                  type: TerraformApply
+                  timeout: 20m
+                  spec:
+                    provisionerIdentifier: __TERRAFORM_PROVISIONER_ID__
+                    delegateSelectors: [__HARNESS_DELEGATE_SELECTOR__]
+                    configuration:
+                      type: InheritFromPlan
+    - stage:
+        name: Deploy to Dev
+        identifier: deploy_to_dev
+        type: Deployment
+        spec:
+          deploymentType: Kubernetes
+          service:
+            serviceRef: __HARNESS_SERVICE_REF__
+          environment:
+            environmentRef: __HARNESS_ENVIRONMENT_REF__
+            deployToAll: false
+            infrastructureDefinitions:
+              - identifier: __HARNESS_INFRASTRUCTURE_REF__
+          execution:
+            steps:
+              - step:
+                  name: Native Kubernetes Rolling Deploy
+                  identifier: native_kubernetes_rolling_deploy
+                  type: K8sRollingDeploy
+                  timeout: 15m
+                  spec:
+                    skipDryRun: false
+                    pruningEnabled: false
