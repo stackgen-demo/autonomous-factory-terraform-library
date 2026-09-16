@@ -60,7 +60,7 @@ terraform_roots:
       - kubernetes_namespace_v1.application
       - kubernetes_service_account_v1.application
       - module.orders_queue
-      - module.audit_event_logs
+      - module.audit_log_group
 dependency_mappings:
   - catalog_entry: aws-eks-sqs
     catalog_path: catalog/aws-eks-sqs.yaml
