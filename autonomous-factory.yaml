@@ -22,6 +22,45 @@ delivery_pipeline:
     delegate_selector: demo-env
     environment: dev
     cluster: ai-sre-demo
+terraform_roots:
+  - id: aws-eks-dev
+    version: 1.0.0
+    destination: infra
+    template_path: templates/terraform-root/aws-eks-dev
+    files:
+      - backend.tf
+      - main.tf
+      - outputs.tf
+      - providers.tf
+      - variables.tf
+      - versions.tf
+      - .terraform.lock.hcl
+    backend:
+      type: s3
+      bucket: autonomous-factory-tfstate-697091778198-us-west-2
+      key: autonomous-factory-demo/dev/terraform.tfstate
+      region: us-west-2
+      locking: s3-use-lockfile
+      encrypted: true
+    immutable_scope:
+      account: "697091778198"
+      region: us-west-2
+      environment: dev
+      cluster: ai-sre-demo
+      namespace: autonomous-factory-dev
+    validation:
+      - tofu_fmt_check
+      - tofu_init_backend_false
+      - tofu_validate
+      - tofu_speculative_plan
+      - create_only_plan_policy
+    approved_resource_prefixes:
+      - aws_ecr_repository.application
+      - aws_iam_role.application
+      - kubernetes_namespace_v1.application
+      - kubernetes_service_account_v1.application
+      - module.orders_queue
+      - module.audit_event_logs
 dependency_mappings:
   - catalog_entry: aws-eks-sqs
     catalog_path: catalog/aws-eks-sqs.yaml
