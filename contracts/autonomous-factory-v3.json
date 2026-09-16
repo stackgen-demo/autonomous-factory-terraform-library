@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": 3,
+  "generation": {
+    "author": "aiden-agent",
+    "maximumRepairAttempts": 3,
+    "validatorMayRewriteTrackedFiles": false
+  },
+  "capabilities": [
+    {
+      "id": "aws-eks-cloudwatch-logs",
+      "displayName": "CloudWatch Logs",
+      "catalogPath": "catalog/aws-eks-cloudwatch-logs.yaml",
+      "referenceTemplate": "templates/aws/eks-cloudwatch-logs-dependency/dependency.tf.tftpl",
+      "deploymentTemplate": "templates/aws/eks-cloudwatch-logs-dependency/deployment-env.yaml.tftpl",
+      "terraformFilename": "dependency-cloudwatch-logs.tf",
+      "moduleSource": "git::https://github.com/stackgen-demo/autonomous-factory-terraform-library.git//modules/aws-eks-cloudwatch-logs?ref=v1.2.0",
+      "moduleAddressPrefix": "module.audit_log_group.",
+      "requiredChangedPaths": [
+        "infra/dependency-cloudwatch-logs.tf",
+        "harness/manifests/autonomous-factory-demo.yaml",
+        "catalog-info.yaml"
+      ]
+    },
+    {
+      "id": "aws-eks-sns",
+      "displayName": "Amazon SNS",
+      "catalogPath": "catalog/aws-eks-sns.yaml",
+      "referenceTemplate": "templates/aws/eks-sns-dependency/dependency.tf.tftpl",
+      "deploymentTemplate": "templates/aws/eks-sns-dependency/deployment-env.yaml.tftpl",
+      "terraformFilename": "dependency-sns.tf",
+      "moduleSource": "git::https://github.com/stackgen-demo/autonomous-factory-terraform-library.git//modules/aws-eks-sns?ref=v1.1.0",
+      "moduleAddressPrefix": "module.events_topic.",
+      "requiredChangedPaths": [
+        "infra/dependency-sns.tf",
+        "harness/manifests/autonomous-factory-demo.yaml",
+        "catalog-info.yaml"
+      ]
+    },
+    {
+      "id": "aws-eks-sqs",
+      "displayName": "Amazon SQS",
+      "catalogPath": "catalog/aws-eks-sqs.yaml",
+      "referenceTemplate": "templates/aws/eks-sqs-dependency/dependency.tf.tftpl",
+      "deploymentTemplate": "templates/aws/eks-sqs-dependency/values-dev.yaml.tftpl",
+      "terraformFilename": "dependency-sqs.tf",
+      "moduleSource": "git::https://github.com/stackgen-demo/autonomous-factory-terraform-library.git//modules/aws-eks-sqs?ref=v1.0.0",
+      "moduleAddressPrefix": "module.orders_queue.",
+      "requiredChangedPaths": [
+        "infra/dependency-sqs.tf",
+        "helm/autonomous-factory-demo/values-dev.yaml",
+        "catalog-info.yaml"
+      ]
+    }
+  ],
+  "systemModel": {
+    "template": "templates/backstage/catalog-info.yaml.tftpl",
+    "output": "catalog-info.yaml"
+  },
+  "terraformRoot": {
+    "id": "aws-eks-dev",
+    "version": "1.0.0",
+    "templatePath": "templates/terraform-root/aws-eks-dev",
+    "destination": "infra",
+    "requiredFiles": [
+      "backend.tf",
+      "main.tf",
+      "outputs.tf",
+      "providers.tf",
+      "variables.tf",
+      "versions.tf",
+      ".terraform.lock.hcl"
+    ],
+    "approvedResourcePrefixes": [
+      "aws_ecr_repository.application",
+      "aws_iam_role.application",
+      "kubernetes_namespace_v1.application",
+      "kubernetes_service_account_v1.application"
+    ]
+  },
+  "deliveryPipeline": {
+    "template": "templates/harness/autonomous-factory-dev-pipeline.yaml",
+    "requiredStageIdentifiers": [
+      "terraform_plan",
+      "terraform_apply",
+      "native_kubernetes_rolling_deploy"
+    ],
+    "successCriterion": "native-kubernetes-rolling-deployment"
+  },
+  "validation": {
+    "format": "tofu fmt -check -recursive",
+    "init": "tofu init",
+    "configuration": "tofu validate",
+    "plan": "state-aware speculative plan",
+    "defaultPlanPolicy": {
+      "allowCreate": true,
+      "allowUpdate": false,
+      "allowDelete": false
+    }
+  }
+}
