@@ -1,0 +1,43 @@
+# Managed by Autonomous Factory
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: __SYSTEM_NAME__
+  title: Autonomous Factory
+  description: Application services that deliver auditable operational events.
+spec:
+  owner: __OWNER__
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: __COMPONENT_NAME__
+  title: Autonomous Factory Demo
+  description: Service that publishes application audit events.
+  annotations:
+    github.com/project-slug: __REPOSITORY__
+    backstage.io/kubernetes-id: __COMPONENT_NAME__
+  tags:
+    - nodejs
+    - aws
+    - eks
+spec:
+  type: service
+  lifecycle: development
+  owner: __OWNER__
+  system: __SYSTEM_NAME__
+  dependsOn:
+    - resource:default/__RESOURCE_NAME__
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: __RESOURCE_NAME__
+  title: Autonomous Factory Dev Audit Events
+  description: Dev audit event delivery backed by the approved CloudWatch Logs dependency.
+  annotations:
+    backstage.io/kubernetes-id: __COMPONENT_NAME__
+spec:
+  type: __RESOURCE_TYPE__
+  owner: __OWNER__
+  system: __SYSTEM_NAME__

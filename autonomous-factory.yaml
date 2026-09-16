@@ -1,10 +1,17 @@
-version: 1
+version: 2
 policy_owner: platform-team
 description: >-
   Approved dependency-to-infrastructure mappings for participating Autonomous
   Factory applications. Application repositories may declare identity,
   environment eligibility, and requested capabilities, but never module,
   template, IAM, or catalog-version selection.
+contract_path: contracts/autonomous-factory-v2.json
+system_model:
+  template_path: templates/backstage/catalog-info.yaml.tftpl
+  output_path: catalog-info.yaml
+  validation:
+    - backstage_entity_shape
+    - canonical_file_digest
 delivery_pipeline:
   identifier: autonomous_factory_dev_pipeline
   template_path: templates/harness/autonomous-factory-dev-pipeline.yaml

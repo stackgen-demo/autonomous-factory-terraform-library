@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": 2,
+  "service": {
+    "name": "autonomous-factory-demo",
+    "repository": "stackgen-demo/autonomous-factory-demo",
+    "owner": "group:stackgen-field-engineering",
+    "system": "autonomous-factory"
+  },
+  "environment": {
+    "name": "dev",
+    "cluster": "ai-sre-demo",
+    "namespace": "autonomous-factory-dev"
+  },
+  "dependency": {
+    "capability": "aws:cloudwatch-logs",
+    "catalogEntry": "aws-eks-cloudwatch-logs",
+    "moduleVersion": "1.2.0",
+    "environmentVariable": "AUDIT_LOG_GROUP_NAME",
+    "environmentValue": "/autonomous-factory/dev/audit-events"
+  },
+  "systemModel": {
+    "template": "templates/backstage/catalog-info.yaml.tftpl",
+    "output": "catalog-info.yaml",
+    "componentName": "autonomous-factory-demo",
+    "resourceName": "autonomous-factory-dev-audit-events",
+    "resourceType": "aws-cloudwatch-log-group"
+  },
+  "terraformRoot": {
+    "id": "aws-eks-dev",
+    "version": "1.0.0",
+    "destination": "infra"
+  },
+  "deliveryPipeline": {
+    "identifier": "autonomous_factory_dev_pipeline",
+    "organization": "default",
+    "project": "cloudos_software_factory"
+  }
+}
