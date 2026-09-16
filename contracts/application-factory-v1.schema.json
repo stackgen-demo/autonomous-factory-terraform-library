@@ -38,7 +38,10 @@
           "properties": {
             "buildContext": { "type": "string" },
             "dockerfile": { "type": "string" },
-            "testCommand": { "type": "string" },
+            "testCommand": {
+              "type": "string",
+              "description": "The test invocation. A clean delivery job must prepare locked dependencies before running it (for example, npm ci before npm test when package-lock.json exists)."
+            },
             "testImage": { "type": "string" },
             "ecrRepository": { "type": "string" },
             "buildNamespace": { "type": "string", "default": "harness-delegate-ng" },
