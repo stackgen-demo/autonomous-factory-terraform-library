@@ -21,6 +21,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": ["repository", "runtime", "aws", "iac", "delivery", "harness", "eligibleCapabilities"],
+      "allOf": [{"not": {"required": ["linear", "issueTracker"]}}],
       "properties": {
         "repository": {
           "type": "object",
@@ -85,6 +86,8 @@
           "required": ["accountId", "delegateSelector", "githubConnectorRef", "awsConnectorRef", "kubernetesConnectorRef"],
           "properties": {
             "accountId": { "type": "string", "minLength": 1 },
+            "baseUrl": { "type": "string", "pattern": "^https://[A-Za-z0-9.-]+(:[0-9]+)?(/[A-Za-z0-9._~-]+)*/?$", "default": "https://app.harness.io" },
+            "apiBaseUrl": { "type": "string", "pattern": "^https://[A-Za-z0-9.-]+(:[0-9]+)?(/[A-Za-z0-9._~-]+)*/?$" },
             "organization": { "type": "string", "default": "default" },
             "project": { "type": "string", "default": "default" },
             "pipeline": { "type": "string" },
@@ -96,6 +99,28 @@
             "serviceRef": { "type": "string" },
             "environmentRef": { "type": "string", "default": "dev" },
             "infrastructureRef": { "type": "string" }
+          }
+        },
+        "issueTracker": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["provider", "projectKey"],
+          "properties": {
+            "provider": { "enum": ["linear", "jira"] },
+            "projectKey": { "type": "string", "pattern": "^[A-Z][A-Z0-9]*$" },
+            "baseUrl": { "type": "string", "pattern": "^https://[A-Za-z0-9.-]+(:[0-9]+)?(/[A-Za-z0-9._~-]+)*/?$" },
+            "issueKeyPattern": { "type": "string", "minLength": 1 },
+            "statusMapping": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["backlog", "active", "done", "deployed"],
+              "properties": {
+                "backlog": { "type": "string", "minLength": 1 },
+                "active": { "type": "string", "minLength": 1 },
+                "done": { "type": "string", "minLength": 1 },
+                "deployed": { "type": "string", "minLength": 1 }
+              }
+            }
           }
         },
         "linear": {
