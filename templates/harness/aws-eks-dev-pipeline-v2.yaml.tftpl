@@ -95,6 +95,12 @@ pipeline:
                             exit 1
                           }
                           kubectl -n __BUILD_NAMESPACE__ logs "job/$job" --all-containers=true --tail=200
+        failureStrategies:
+          - onFailure:
+              errors:
+                - AllErrors
+              action:
+                type: MarkAsFailure
     - stage:
         name: Terraform Provisioning
         identifier: terraform_provisioning
@@ -118,8 +124,8 @@ pipeline:
                           spec:
                             connectorRef: __HARNESS_GITHUB_CONNECTOR_REF__
                             repoName: __GITHUB_REPOSITORY_NAME__
-                            gitFetchType: Commit
-                            commitSha: <+pipeline.variables.commit_sha>
+                            gitFetchType: Branch
+                            branch: main
                             folderPath: __TERRAFORM_ROOT__
                         moduleSource:
                           useConnectorCredentials: true
@@ -135,6 +141,12 @@ pipeline:
                     delegateSelectors: [__HARNESS_DELEGATE_SELECTOR__]
                     configuration:
                       type: InheritFromPlan
+        failureStrategies:
+          - onFailure:
+              errors:
+                - AllErrors
+              action:
+                type: MarkAsFailure
     - stage:
         name: Deploy to Dev
         identifier: deploy_to_dev
@@ -170,3 +182,9 @@ pipeline:
                   spec:
                     skipDryRun: false
                     pruningEnabled: false
+        failureStrategies:
+          - onFailure:
+              errors:
+                - AllErrors
+              action:
+                type: MarkAsFailure
