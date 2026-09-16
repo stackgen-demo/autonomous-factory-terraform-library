@@ -34,7 +34,7 @@
         "runtime": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["buildContext", "dockerfile"],
+          "required": ["buildContext", "dockerfile", "testCommand", "testImage", "buildServiceAccount", "githubTokenSecret"],
           "properties": {
             "buildContext": { "type": "string" },
             "dockerfile": { "type": "string" },
@@ -49,7 +49,7 @@
         "aws": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["accountId", "region", "eksCluster", "namespace"],
+          "required": ["accountId", "region", "eksCluster", "namespace", "terraformStateBucket", "terraformStateKey"],
           "properties": {
             "accountId": { "type": "string", "pattern": "^[0-9]{12}$" },
             "region": { "type": "string", "pattern": "^[a-z]{2}-[a-z]+-[0-9]+$" },
