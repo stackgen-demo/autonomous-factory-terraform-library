@@ -53,10 +53,19 @@
   },
   "terraformRoot": {
     "id": "aws-eks-dev-v2",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "templatePath": "templates/terraform-root/aws-eks-dev-v2",
     "destinationSource": "application-contract",
     "requiredFiles": ["backend.tf", "main.tf", "outputs.tf", "providers.tf", "variables.tf", "versions.tf"],
+    "permissionsBoundary": {
+      "applicationField": "spec.aws.permissionsBoundaryArn",
+      "terraformVariable": "permissions_boundary_arn",
+      "planValidation": "contracts/permissions-boundary-plan.jq",
+      "optional": true,
+      "bootstrap": "Persist the configured ARN as the generated root variable default, or a literal role argument, so native Harness Plan and Apply use the same value without runner-only environment overrides. Omitted means null, not a chosen policy.",
+      "extend": "Preserve existing root files and role boundaries. A configured boundary must already match the root, state and live role; otherwise block for an operator-reviewed migration.",
+      "policyOwnership": "Pre-existing platform policy. Do not create, update, delete, or select a replacement policy during delivery."
+    },
     "approvedResourcePrefixes": [
       "aws_ecr_repository.application",
       "aws_iam_role.application",

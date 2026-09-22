@@ -6,6 +6,9 @@ Required platform facts:
 
 - GitHub repository and default branch.
 - AWS account, region, existing EKS cluster, target namespace, and an existing S3 state bucket.
+- Optional `spec.aws.permissionsBoundaryArn`: an operator-approved policy that
+  already exists in the application account. Follow the pinned contract's
+  `terraformRoot.permissionsBoundary` rules; agents never manage this policy.
 - Terraform root and unique state key. Use one key per application and environment.
 - Harness account and delegate selector. Organization defaults to `default`; project defaults to `default` only when the application does not specify one.
 - Existing Harness GitHub, AWS/ECR, and Kubernetes connector references. The AWS connector must be able to read the declared ECR repository, and the Kubernetes connector must target the declared EKS cluster.

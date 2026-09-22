@@ -60,7 +60,12 @@
             "eksCluster": { "type": "string", "minLength": 1 },
             "namespace": { "type": "string", "pattern": "^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?$" },
             "terraformStateBucket": { "type": "string", "minLength": 3 },
-            "terraformStateKey": { "type": "string", "minLength": 1 }
+            "terraformStateKey": { "type": "string", "minLength": 1 },
+            "permissionsBoundaryArn": {
+              "type": "string",
+              "description": "Optional operator-approved, pre-existing customer-managed IAM policy in this AWS account. Onboarding pins this ARN in the runner; delivery may not change the policy or substitute another boundary.",
+              "pattern": "^arn:(aws|aws-us-gov|aws-cn):iam::[0-9]{12}:policy/[A-Za-z0-9+=,.@_-]+(/[A-Za-z0-9+=,.@_-]+)*$"
+            }
           }
         },
         "iac": {

@@ -11,3 +11,11 @@ This repository is the governed catalog used by the Autonomous Factory Aiden wor
 5. Install the workflow once for that application with a unique resource prefix and sync its generated runner runtime configuration.
 
 See `knowledge/aws-eks-harness-onboarding.md` for the onboarding and verification contract. The templates are references for agent-authored output; they are not deterministic renderers.
+
+## Validation
+
+Run `ruby tests/test_permissions_boundary.rb` for the boundary plan policy and
+`sh tests/test-root.sh` for offline OpenTofu plans of the root reference with
+mocked AWS/Kubernetes providers. These tests do not apply infrastructure or
+require cloud credentials. Canonical customer initialization remains in the
+[factory onboarding guide](https://github.com/stackgen-demo/autonomous-factory-demo/blob/main/docs/autonomous-factory-portability.md).
