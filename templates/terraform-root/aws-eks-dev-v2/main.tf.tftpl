@@ -35,6 +35,7 @@ data "aws_iam_policy_document" "pod_identity_assume_role" {
 }
 
 resource "aws_iam_role" "application" {
-  name               = "${var.application_name}-dev"
-  assume_role_policy = data.aws_iam_policy_document.pod_identity_assume_role.json
+  name                 = "${var.application_name}-dev"
+  assume_role_policy   = data.aws_iam_policy_document.pod_identity_assume_role.json
+  permissions_boundary = var.permissions_boundary_arn
 }
