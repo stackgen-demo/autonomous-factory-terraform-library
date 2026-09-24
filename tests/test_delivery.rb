@@ -14,6 +14,8 @@ class DeliveryContractTest < Minitest::Test
     assert_equal %w[NO_CHANGE CHANGE_REQUIRED BLOCKED], contract.fetch("dependencyDecision").keys
     model = YAML.load_stream(File.read(File.join(ROOT, contract.dig("foundation", "systemModelTemplate"))))
     assert_equal %w[System Component], model.map { |entity| entity.fetch("kind") }
+    manifest = YAML.safe_load(File.read(File.join(ROOT, contract.dig("foundation", "deploymentTemplate"))))
+    assert_equal "{{ .Values.image }}", manifest.dig("spec", "template", "spec", "containers", 0, "image")
   end
 
   def test_native_pipeline_order_and_zero_change_guard
