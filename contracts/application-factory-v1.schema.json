@@ -138,7 +138,7 @@
         },
         "eligibleCapabilities": {
           "type": "array",
-          "minItems": 1,
+          "minItems": 0,
           "uniqueItems": true,
           "items": { "type": "string", "pattern": "^aws-eks-[a-z0-9-]+$" }
         }
