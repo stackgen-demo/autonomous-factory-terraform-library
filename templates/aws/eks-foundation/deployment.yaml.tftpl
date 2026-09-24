@@ -1,0 +1,25 @@
+# Reference only. Infer the application port and runtime settings from source.
+# Do not invent an external resource dependency for a foundation-only service.
+# Bind image in the Harness service Values manifest to <+artifact.image>.
+# Harness expressions belong in Values, not directly in Kubernetes manifests.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: __APPLICATION_NAME__
+  namespace: __NAMESPACE__
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: __APPLICATION_NAME__
+  template:
+    metadata:
+      labels:
+        app: __APPLICATION_NAME__
+    spec:
+      serviceAccountName: __SERVICE_ACCOUNT__
+      containers:
+        - name: application
+          image: "{{ .Values.image }}"
+          ports:
+            - containerPort: __APPLICATION_PORT__

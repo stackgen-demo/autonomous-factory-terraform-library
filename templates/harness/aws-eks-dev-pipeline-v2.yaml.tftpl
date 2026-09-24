@@ -12,7 +12,89 @@ pipeline:
       type: String
       required: true
       value: <+input>
+    - name: delivery_mode
+      type: String
+      required: true
+      value: <+input>
   stages:
+    - stage:
+        name: Terraform Provisioning
+        identifier: terraform_provisioning
+        type: Custom
+        spec:
+          execution:
+            steps:
+              - step:
+                  name: Terraform Plan
+                  identifier: terraform_plan
+                  type: TerraformPlan
+                  timeout: 15m
+                  spec:
+                    provisionerIdentifier: __TERRAFORM_PROVISIONER_ID__
+                    delegateSelectors: [__HARNESS_DELEGATE_SELECTOR__]
+                    configuration:
+                      command: Apply
+                      skipRefreshCommand: false
+                      exportTerraformPlanJson: true
+                      configFiles:
+                        store:
+                          type: Github
+                          spec:
+                            connectorRef: __HARNESS_GITHUB_CONNECTOR_REF__
+                            repoName: __GITHUB_REPOSITORY_NAME__
+                            gitFetchType: Commit
+                            commitId: <+pipeline.variables.commit_sha>
+                            folderPath: __TERRAFORM_ROOT__
+                        moduleSource:
+                          useConnectorCredentials: true
+                      secretManagerRef: harnessSecretManager
+                      skipStateStorage: false
+              - step:
+                  name: Enforce Reviewed Infrastructure Changes
+                  identifier: terraform_plan_guard
+                  type: ShellScript
+                  timeout: 2m
+                  spec:
+                    shell: Bash
+                    onDelegate: true
+                    delegateSelectors: [__HARNESS_DELEGATE_SELECTOR__]
+                    environmentVariables:
+                      - name: DELIVERY_MODE
+                        type: String
+                        value: <+pipeline.variables.delivery_mode>
+                    source:
+                      type: Inline
+                      spec:
+                        script: |
+                          set -euo pipefail
+                          plan='<+execution.steps.terraform_plan.plan.jsonFilePath>'
+                          test -s "$plan"
+                          case "$DELIVERY_MODE" in
+                            CODE_ONLY|DELIVERY_BOOTSTRAP)
+                              jq -e 'all(.resource_changes[]?; .change.actions == ["no-op"] or .change.actions == ["read"])' "$plan" >/dev/null
+                              ;;
+                            FOUNDATION_BOOTSTRAP|INFRA_CHANGE)
+                              jq -e 'all(.resource_changes[]?; .change.actions == ["no-op"] or .change.actions == ["read"] or .change.actions == ["create"])' "$plan" >/dev/null
+                              ;;
+                            *) exit 2 ;;
+                          esac
+                          printf 'TERRAFORM_PLAN_POLICY: PASS\n'
+              - step:
+                  name: Terraform Apply
+                  identifier: terraform_apply
+                  type: TerraformApply
+                  timeout: 20m
+                  spec:
+                    provisionerIdentifier: __TERRAFORM_PROVISIONER_ID__
+                    delegateSelectors: [__HARNESS_DELEGATE_SELECTOR__]
+                    configuration:
+                      type: InheritFromPlan
+        failureStrategies:
+          - onFailure:
+              errors:
+                - AllErrors
+              action:
+                type: MarkAsFailure
     - stage:
         name: Build and Publish
         identifier: build_and_publish
@@ -95,52 +177,6 @@ pipeline:
                             exit 1
                           }
                           kubectl -n __BUILD_NAMESPACE__ logs "job/$job" --all-containers=true --tail=200
-        failureStrategies:
-          - onFailure:
-              errors:
-                - AllErrors
-              action:
-                type: MarkAsFailure
-    - stage:
-        name: Terraform Provisioning
-        identifier: terraform_provisioning
-        type: Custom
-        spec:
-          execution:
-            steps:
-              - step:
-                  name: Terraform Plan
-                  identifier: terraform_plan
-                  type: TerraformPlan
-                  timeout: 15m
-                  spec:
-                    provisionerIdentifier: __TERRAFORM_PROVISIONER_ID__
-                    delegateSelectors: [__HARNESS_DELEGATE_SELECTOR__]
-                    configuration:
-                      command: Apply
-                      configFiles:
-                        store:
-                          type: Github
-                          spec:
-                            connectorRef: __HARNESS_GITHUB_CONNECTOR_REF__
-                            repoName: __GITHUB_REPOSITORY_NAME__
-                            gitFetchType: Branch
-                            branch: main
-                            folderPath: __TERRAFORM_ROOT__
-                        moduleSource:
-                          useConnectorCredentials: true
-                      secretManagerRef: harnessSecretManager
-                      skipStateStorage: false
-              - step:
-                  name: Terraform Apply
-                  identifier: terraform_apply
-                  type: TerraformApply
-                  timeout: 20m
-                  spec:
-                    provisionerIdentifier: __TERRAFORM_PROVISIONER_ID__
-                    delegateSelectors: [__HARNESS_DELEGATE_SELECTOR__]
-                    configuration:
-                      type: InheritFromPlan
         failureStrategies:
           - onFailure:
               errors:

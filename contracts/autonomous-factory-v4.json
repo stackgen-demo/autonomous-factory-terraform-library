@@ -12,6 +12,16 @@
     "validatorMayRewriteTrackedFiles": false,
     "artifactPathSource": "application-contract"
   },
+  "dependencyDecision": {
+    "NO_CHANGE": "No new or changed infrastructure requirement; do not select a capability. Existing unchanged dependencies are not a delta.",
+    "CHANGE_REQUIRED": "Exactly one registered, application-eligible capability supported by source evidence.",
+    "BLOCKED": "Unknown or ambiguous requirement, unsupported modification/removal, incomplete evidence, or conflicting baseline. Never treat a failed scan as NO_CHANGE."
+  },
+  "foundation": {
+    "deploymentTemplate": "templates/aws/eks-foundation/deployment.yaml.tftpl",
+    "systemModelTemplate": "templates/backstage/catalog-foundation.yaml.tftpl",
+    "capabilityRequired": false
+  },
   "capabilities": [
     {
       "id": "aws-eks-cloudwatch-logs",
@@ -78,7 +88,9 @@
     "defaultProject": "default",
     "definitionPathSource": "application-contract",
     "requiredStageIdentifiers": ["terraform_plan", "terraform_apply", "native_kubernetes_rolling_deploy"],
-    "successCriterion": "native-kubernetes-rolling-deployment"
+    "successCriterion": "native-kubernetes-rolling-deployment",
+    "immutableRevision": "commit_sha pins build, native Terraform checkout, and service manifest checkout",
+    "planGuard": "A refreshed native plan must pass before Apply. CODE_ONLY and DELIVERY_BOOTSTRAP require zero resource changes; other modes permit creates only."
   },
   "validation": {
     "format": "tofu fmt -check -recursive",
