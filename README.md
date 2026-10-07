@@ -19,6 +19,15 @@ container, pins Terraform to the selected delivery commit, and enforces a
 refreshed zero-change plan for code-only delivery before native Apply.
 Existing deployments need a reviewed pipeline upgrade before using this path.
 
+Existing Terraform roots are extended in place, not overwritten with this
+library's scaffold. The scaffold's required filenames apply only to BOOTSTRAP.
+The central `contracts/terraform-plan-policy.jq` is the canonical policy shared
+by runner validation and the Harness native plan guard. The guard adds a
+`capability` input, rejects drift and scopes creates to the selected capability
+or approved foundation addresses. Existing-resource updates still require a
+separate operator-reviewed migration. Run `python3 scripts/sync-plan-policy.py`
+after changing that policy and `--check` to verify the committed template.
+
 ## Validation
 
 Run `ruby tests/test_permissions_boundary.rb` for the boundary plan policy and

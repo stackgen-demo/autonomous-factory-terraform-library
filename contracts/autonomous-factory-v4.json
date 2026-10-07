@@ -67,13 +67,21 @@
     "templatePath": "templates/terraform-root/aws-eks-dev-v2",
     "destinationSource": "application-contract",
     "requiredFiles": ["backend.tf", "main.tf", "outputs.tf", "providers.tf", "variables.tf", "versions.tf"],
+    "requiredFilesScope": "BOOTSTRAP scaffold only; existing roots are classified semantically, not by filename",
+    "existingRootPolicy": {
+      "backend": "Preserve the contract-matched app-owned S3 backend, state key and execution identity",
+      "generation": "Agent-authored scoped extension of the actual existing root; preserve existing declarations, provider selections and externally managed resources",
+      "supportingChanges": ["new variables", "new outputs", "new locals", "compatible provider declarations", "lockfile additions and additional checksums"],
+      "resourceUpdates": "Block automatic publication and Apply for a separate operator-reviewed scoped migration",
+      "noChange": "Resource-free existing roots are supported. Missing lockfile or delivery artifacts require DELIVERY_BOOTSTRAP with zero resource changes"
+    },
     "permissionsBoundary": {
       "applicationField": "spec.aws.permissionsBoundaryArn",
       "terraformVariable": "permissions_boundary_arn",
       "planValidation": "contracts/permissions-boundary-plan.jq",
       "optional": true,
       "bootstrap": "Persist the configured ARN as the generated root variable default, or a literal role argument, so native Harness Plan and Apply use the same value without runner-only environment overrides. Omitted means null, not a chosen policy.",
-      "extend": "Preserve existing root files and role boundaries. A configured boundary must already match the root, state and live role; otherwise block for an operator-reviewed migration.",
+      "extend": "Preserve existing backend, provider configuration, resource ownership and role boundaries while adding necessary capability configuration. A configured boundary must already match the root, state and live role; otherwise block for an operator-reviewed migration.",
       "policyOwnership": "Pre-existing platform policy. Do not create, update, delete, or select a replacement policy during delivery."
     },
     "approvedResourcePrefixes": [
@@ -90,7 +98,8 @@
     "requiredStageIdentifiers": ["terraform_plan", "terraform_apply", "native_kubernetes_rolling_deploy"],
     "successCriterion": "native-kubernetes-rolling-deployment",
     "immutableRevision": "commit_sha pins build, native Terraform checkout, and service manifest checkout",
-    "planGuard": "A refreshed native plan must pass before Apply. CODE_ONLY and DELIVERY_BOOTSTRAP require zero resource changes; other modes permit creates only."
+    "planGuard": "Use contracts/terraform-plan-policy.jq unchanged in both runner and Harness. Refreshed plans must have no drift. CODE_ONLY and DELIVERY_BOOTSTRAP require zero resource changes; other modes permit only approved foundation or selected capability creates. Updates require separate operator review; replacements/deletes block.",
+    "planPolicyPath": "contracts/terraform-plan-policy.jq"
   },
   "validation": {
     "format": "tofu fmt -check -recursive",

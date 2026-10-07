@@ -36,13 +36,20 @@ class DeliveryContractTest < Minitest::Test
         [["no-op"], ["read"], ["create"], ["update"], ["delete"], ["delete", "create"]].each do |actions|
           plan.rewind
           plan.truncate(0)
-          plan.write(JSON.generate(resource_changes: [{change: {actions: actions}}]))
+          plan.write(JSON.generate(resource_changes: [{address: "aws_ecr_repository.application", change: {actions: actions}}]))
           plan.flush
-          _, _, status = Open3.capture3({"DELIVERY_MODE" => mode}, "bash", "-c", script)
+          _, _, status = Open3.capture3({"DELIVERY_MODE" => mode, "CAPABILITY" => mode == "INFRA_CHANGE" ? "aws-eks-sqs" : "none"}, "bash", "-c", script)
           allowed = mode != "unknown" && ([%w[no-op], %w[read]].include?(actions) || (actions == ["create"] && %w[FOUNDATION_BOOTSTRAP INFRA_CHANGE].include?(mode)))
           assert_equal allowed, status.success?, "#{mode}: #{actions}"
         end
       end
     end
+  end
+
+  def test_native_guard_matches_canonical_policy
+    _, error, status = Open3.capture3("python3", File.join(ROOT, "scripts/sync-plan-policy.py"), "--check")
+    assert status.success?, error
+    contract = JSON.parse(File.read(File.join(ROOT, "contracts/autonomous-factory-v4.json")))
+    assert_equal "contracts/terraform-plan-policy.jq", contract.dig("deliveryPipeline", "planPolicyPath")
   end
 end
