@@ -2,6 +2,20 @@
 
 This repository is the governed catalog used by the Autonomous Factory Aiden workflow. It contains registered AWS capabilities and reference material for generating Terraform, Backstage system models, and Harness Dev pipelines.
 
+## Agent-owned delivery contract
+
+`contracts/autonomous-factory-v5.json` is the agent-owned execution contract. It
+preserves the v4 capability catalog and Terraform safety policy, but replaces
+pipeline-template identity requirements with behavioral compatibility: native
+step types, immutable revision propagation, enforced plan review, safe dependency
+ordering and correlated execution evidence. Existing pipeline stage/input names
+need not match the reference. Equivalent governance must be verified, not merely
+claimed by an agent; prompts and agent-editable guards are not independent controls.
+
+The v4 contract and reference templates remain unchanged for existing pinned
+installations. Adopt v5 explicitly through a reviewed immutable library revision.
+No automatic customer rollout is part of the internal acceptance work.
+
 ## Attach an application
 
 1. Add `.autonomous-factory/application.yaml` to the application repository and validate it against `contracts/application-factory-v1.schema.json`.
