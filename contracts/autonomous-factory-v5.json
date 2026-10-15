@@ -123,7 +123,7 @@
     "definitionPathSource": "application-contract",
     "successCriterion": "native-kubernetes-rolling-deployment",
     "immutableRevision": "Build, Terraform configuration, service manifests and deployed artifact must correlate to the same verified deployment_commit_sha; equivalent immutable input bindings are allowed.",
-    "planGuard": "Enforce the semantics of contracts/terraform-plan-policy.jq before applying the reviewed native plan. Refreshed plans must have no drift. CODE_ONLY and DELIVERY_BOOTSTRAP require zero resource changes; other modes permit only approved foundation or selected capability creates. Updates require separate operator review; replacements/deletes block. Reuse equivalent independently enforced governance only after verifying its behavior; exact script text and step names are not required.",
+    "planGuard": "Enforce the semantics of contracts/terraform-plan-policy.jq before applying the reviewed native plan. Refreshed plans must have no drift. CODE_ONLY and DELIVERY_BOOTSTRAP require zero resource changes; other modes permit only approved foundation or selected capability creates. Updates require separate operator review; replacements/deletes block. Verify equivalent plan checks by behavior; exact script text and step names are not required. Separation of edit/bypass permissions follows assuranceProfiles and never changes these plan rules.",
     "planPolicyPath": "contracts/terraform-plan-policy.jq",
     "requiredNativeStepTypes": [
       "TerraformPlan",
@@ -134,7 +134,18 @@
     "ordering": "Plan and policy approval precede Apply. Deployment follows its required build and provisioning. Build may precede Terraform when its repository and other prerequisites already exist.",
     "existingResources": "Preserve resource identities. Differences from the reference are not authorization to rewrite a live pipeline. Genuine gaps require a scoped reviewed correction.",
     "monitoring": "Persist source/deployment/pipeline/execution identity; resolve and inspect native nodes by verified mapping and type, not template identifiers. Ambiguous trigger outcomes require reconciliation, never blind retry.",
-    "enforcement": "Document who may edit/bypass pre-Apply controls. Agent-owned scripts and prompts are not independent authorization boundaries."
+    "enforcement": "Document who may edit/bypass pre-Apply controls. Agent-owned scripts and prompts are not independent authorization boundaries. The operator selects the assurance profile in trusted workflow configuration, never through application code, tickets or runtime agent discretion."
+  },
+  "assuranceProfiles": {
+    "default": "governed",
+    "governed": {
+      "requireIndependentEnforcement": true,
+      "scope": "Production-ready governed acceptance requires proof the delivery identity cannot edit or bypass required controls."
+    },
+    "internal_functional": {
+      "requireIndependentEnforcement": false,
+      "scope": "Explicitly operator-authorized internal testing only. Missing or unverified independent edit/bypass separation is a recorded production-readiness limitation, not a functional delivery blocker. All Terraform plan rules, existing permissions/protections, required checks, immutable revision checks and native delivery evidence remain mandatory. Do not disable or bypass existing controls. A functional pass is not production security approval."
+    }
   },
   "validation": {
     "format": "tofu fmt -check -recursive",

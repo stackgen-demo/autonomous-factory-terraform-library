@@ -31,4 +31,15 @@ class AgentDeliveryContractTest < Minitest::Test
     assert_includes delivery.fetch('enforcement'), 'not independent authorization boundaries'
     assert_includes delivery.fetch('existingResources'), 'scoped reviewed correction'
   end
+
+  def test_explicit_internal_assurance_does_not_change_plan_policy
+    profiles = V5.fetch('assuranceProfiles')
+    assert_equal 'governed', profiles.fetch('default')
+    assert_equal true, profiles.dig('governed', 'requireIndependentEnforcement')
+    assert_equal false, profiles.dig('internal_functional', 'requireIndependentEnforcement')
+    assert_includes profiles.dig('internal_functional', 'scope'), 'All Terraform plan rules'
+    assert_includes profiles.dig('internal_functional', 'scope'), 'Do not disable or bypass existing controls'
+    assert_includes V5.dig('deliveryPipeline', 'enforcement'), 'never through application code'
+    assert_equal V4.fetch('validation'), V5.fetch('validation')
+  end
 end

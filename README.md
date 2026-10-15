@@ -11,6 +11,11 @@ step types, immutable revision propagation, enforced plan review, safe dependenc
 ordering and correlated execution evidence. Existing pipeline stage/input names
 need not match the reference. Equivalent governance must be verified, not merely
 claimed by an agent; prompts and agent-editable guards are not independent controls.
+The default `governed` assurance profile requires that separation. An operator
+may explicitly select `internal_functional` for internal testing: record missing
+or unverified edit/bypass separation as a production-readiness limitation, not a
+functional blocker. Terraform plan policy and all existing platform protections
+remain required and unchanged; the agent cannot select this exception itself.
 
 The v4 contract and reference templates remain unchanged for existing pinned
 installations. Adopt v5 explicitly through a reviewed immutable library revision.
