@@ -4,6 +4,18 @@ require 'minitest/autorun'
 
 class ExternalGovernanceTest < Minitest::Test
   ROOT = File.expand_path('..', __dir__)
+  def test_completion_uses_pipeline_status_without_changing_pipeline_checks
+    current = JSON.parse(File.read(File.join(ROOT, 'contracts/autonomous-factory-v6.json')))
+    delivery = current.fetch('deliveryPipeline')
+    assert_equal 'harness-pipeline-terminal-status', delivery.fetch('successCriterion')
+    assert_includes delivery.fetch('monitoring'), 'poll only that execution'
+    assert_includes delivery.fetch('monitoring'), 'never blind retry'
+    assert_includes delivery.fetch('monitoring'), 'INCOMPLETE'
+    assert_includes delivery.fetch('completionReporting'), 'does not independently inspect'
+    assert_includes delivery.fetch('completionReporting'), 'Preserve pipeline checks'
+    assert_equal %w[TerraformPlan TerraformApply K8sRollingDeploy], delivery.fetch('requiredNativeStepTypes')
+  end
+
   def test_external_governance_keeps_native_delivery_and_legacy_contract
     current = JSON.parse(File.read(File.join(ROOT, 'contracts/autonomous-factory-v6.json')))
     legacy = JSON.parse(File.read(File.join(ROOT, 'contracts/autonomous-factory-v5.json')))

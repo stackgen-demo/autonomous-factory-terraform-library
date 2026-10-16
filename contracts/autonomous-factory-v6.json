@@ -115,7 +115,7 @@
     "referenceUse": "For a new/reference-based pipeline, copy this pinned YAML and substitute application settings. CI owns checkout, test containers and native BuildAndPushECR; do not reintroduce a delegate ShellScript that creates Kubernetes build Jobs. Preserve compatible existing external pipelines unless a reviewed migration is authorized.",
     "defaultProject": "default",
     "definitionPathSource": "application-contract",
-    "successCriterion": "native-kubernetes-rolling-deployment",
+    "successCriterion": "harness-pipeline-terminal-status",
     "immutableRevision": "Build, Terraform configuration, service manifests and deployed artifact must correlate to the same verified deployment_commit_sha; equivalent immutable input bindings are allowed.",
     "requiredNativeStepTypes": [
       "TerraformPlan",
@@ -125,7 +125,8 @@
     "compatibility": "Verify behavior using full resolved definitions, input sets and templates. Discover actual node paths and input bindings. Identifiers, variable names, extra validation steps and otherwise valid ordering need not match the reference.",
     "ordering": "Native Plan precedes native Apply of that same plan. Deployment follows its required build and provisioning. Build may precede Terraform when its repository and other prerequisites already exist.",
     "existingResources": "Preserve resource identities. Differences from the reference are not authorization to rewrite a live pipeline. Genuine gaps require a scoped reviewed correction.",
-    "monitoring": "Persist source/deployment/pipeline/execution identity; resolve and inspect native nodes by verified mapping and type, not template identifiers. Ambiguous trigger outcomes require reconciliation, never blind retry.",
+    "monitoring": "Persist source/deployment/pipeline/execution identity and poll only that execution to a terminal pipeline status. Pipeline Success completes delivery; report exact unsuccessful statuses, or INCOMPLETE when completion cannot be confirmed. Ambiguous trigger outcomes require reconciliation, never blind retry.",
+    "completionReporting": "Report the pipeline status and execution link once. Harness owns its configured checks; Aiden does not independently inspect native-step results, test logs, Kubernetes workloads, deployed images or post-deployment Terraform plans. Preserve pipeline checks and source/input validation before triggering. Do not claim independently verified health or drift-free deployment.",
     "enforcement": "Platform owners configure external policy enforcement outside this workflow. The agent reports observed policy denials or pending approvals accurately, but neither provisions governance nor claims security certification.",
     "governance": "External OPA/platform governance owns change authorization. Do not generate or execute a factory plan-policy script, duplicate its rules, require a factory guard, or audit edit/bypass separation as a delivery prerequisite. Preserve and honor existing policy decisions, approvals, permissions and branch protections; do not weaken or bypass them. A successful plan is not policy approval."
   },
