@@ -44,11 +44,19 @@ class ExternalGovernanceTest < Minitest::Test
     assert_equal '<+pipeline.variables.commit_sha>', pipeline.dig('properties', 'ci', 'codebase', 'build', 'spec', 'commitSha')
     build = ci.dig('execution', 'steps', 1, 'step', 'spec')
     assert_equal ['<+pipeline.variables.commit_sha>'], build.fetch('tags')
-    assert_equal '__HARNESS_AWS_CONNECTOR_REF__', build.fetch('connectorRef')
+    assert_equal '__HARNESS_CI_AWS_CONNECTOR_REF__', build.fetch('connectorRef')
+    assert_equal '__HARNESS_CI_KUBERNETES_CONNECTOR_REF__', ci.dig('infrastructure', 'spec', 'connectorRef')
+    assert_equal ['__HARNESS_CI_DELEGATE_SELECTOR__'], stages[1].fetch('delegateSelectors')
+    assert_equal ['__HARNESS_DELEGATE_SELECTOR__'], stages[0].dig('spec', 'execution', 'steps', 0, 'step', 'spec', 'delegateSelectors')
     refute_match(/ShellScript|kubectl|kind: Job|GITHUB_TOKEN|kaniko-project/, template)
     stages.each { |s| assert_equal 'MarkAsFailure', s.dig('failureStrategies', 0, 'onFailure', 'action', 'type') }
     assert_includes contract.dig('deliveryPipeline', 'referenceUse'), 'copy this pinned YAML'
     schema = JSON.parse(File.read(File.join(ROOT, 'contracts/application-factory-v1.schema.json')))
     refute_includes schema.dig('properties', 'spec', 'properties', 'runtime', 'required'), 'githubTokenSecret'
+    harness = schema.dig('properties', 'spec', 'properties', 'harness')
+    %w[ciKubernetesConnectorRef ciAwsConnectorRef ciDelegateSelector].each do |name|
+      assert harness.fetch('properties').key?(name)
+      refute_includes harness.fetch('required'), name
+    end
   end
 end

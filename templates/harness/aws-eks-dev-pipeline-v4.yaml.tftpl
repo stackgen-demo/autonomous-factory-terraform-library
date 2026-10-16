@@ -86,12 +86,13 @@ pipeline:
         name: Build and Publish
         identifier: build_and_publish
         type: CI
+        delegateSelectors: [__HARNESS_CI_DELEGATE_SELECTOR__]
         spec:
           cloneCodebase: true
           infrastructure:
             type: KubernetesDirect
             spec:
-              connectorRef: __HARNESS_KUBERNETES_CONNECTOR_REF__
+              connectorRef: __HARNESS_CI_KUBERNETES_CONNECTOR_REF__
               namespace: __BUILD_NAMESPACE__
               serviceAccountName: __BUILD_SERVICE_ACCOUNT__
               automountServiceAccountToken: true
@@ -122,7 +123,7 @@ pipeline:
                   type: BuildAndPushECR
                   timeout: 15m
                   spec:
-                    connectorRef: __HARNESS_AWS_CONNECTOR_REF__
+                    connectorRef: __HARNESS_CI_AWS_CONNECTOR_REF__
                     region: __AWS_REGION__
                     account: "__AWS_ACCOUNT_ID__"
                     imageName: __ECR_REPOSITORY__

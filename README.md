@@ -49,6 +49,16 @@ after changing that policy and `--check` to verify the committed template.
 
 ## Validation
 
+The native-CI reference can use a different Kubernetes cluster from AWS/EKS CD.
+Bind `HARNESS_CI_KUBERNETES_CONNECTOR_REF`, `HARNESS_CI_AWS_CONNECTOR_REF`, and
+`HARNESS_CI_DELEGATE_SELECTOR` from the application's optional
+`spec.harness.ciKubernetesConnectorRef`, `ciAwsConnectorRef`, and
+`ciDelegateSelector`. When omitted, use their existing non-CI counterparts.
+The existing runtime build namespace/service account apply to the CI cluster.
+Keep Terraform and deployment connectors/selectors unchanged. A non-AWS build
+cluster needs a verified ECR identity such as Harness OIDC; it cannot inherit
+EKS Pod Identity simply by copying a service account name.
+
 Run `ruby tests/test_permissions_boundary.rb` for the boundary plan policy and
 `sh tests/test-root.sh` for offline OpenTofu plans of the root reference with
 mocked AWS/Kubernetes providers. These tests do not apply infrastructure or
