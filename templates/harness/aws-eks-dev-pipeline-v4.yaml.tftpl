@@ -105,6 +105,7 @@ pipeline:
                   type: Run
                   timeout: 10m
                   spec:
+                    connectorRef: __HARNESS_IMAGE_REGISTRY_CONNECTOR_REF__
                     image: __TEST_IMAGE__
                     shell: Sh
                     command: |

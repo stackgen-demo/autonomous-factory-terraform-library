@@ -39,6 +39,7 @@ class ExternalGovernanceTest < Minitest::Test
     assert_equal 'KubernetesDirect', ci.dig('infrastructure', 'type')
     assert_equal '__BUILD_SERVICE_ACCOUNT__', ci.dig('infrastructure', 'spec', 'serviceAccountName')
     assert_equal %w[Run BuildAndPushECR], ci.dig('execution', 'steps').map { |s| s.dig('step', 'type') }
+    assert_equal '__HARNESS_IMAGE_REGISTRY_CONNECTOR_REF__', ci.dig('execution', 'steps', 0, 'step', 'spec', 'connectorRef')
     assert_equal 'commitSha', pipeline.dig('properties', 'ci', 'codebase', 'build', 'type')
     assert_equal '<+pipeline.variables.commit_sha>', pipeline.dig('properties', 'ci', 'codebase', 'build', 'spec', 'commitSha')
     build = ci.dig('execution', 'steps', 1, 'step', 'spec')

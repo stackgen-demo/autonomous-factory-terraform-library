@@ -101,6 +101,7 @@
             "githubConnectorRef": { "type": "string", "minLength": 1 },
             "awsConnectorRef": { "type": "string", "minLength": 1 },
             "kubernetesConnectorRef": { "type": "string", "minLength": 1 },
+            "imageRegistryConnectorRef": { "type": "string", "minLength": 1, "description": "Required by the native Harness CI reference to pull the test image; may reference an inherited account/org connector." },
             "serviceRef": { "type": "string" },
             "environmentRef": { "type": "string", "default": "dev" },
             "infrastructureRef": { "type": "string" }

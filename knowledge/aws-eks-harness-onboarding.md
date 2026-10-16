@@ -12,6 +12,9 @@ Required platform facts:
 - Terraform root and unique state key. Use one key per application and environment.
 - Harness account and delegate selector. Organization defaults to `default`; project defaults to `default` only when the application does not specify one.
 - Existing Harness GitHub, AWS/ECR, and Kubernetes connector references. The AWS connector must be able to read the declared ECR repository, and the Kubernetes connector must target the declared EKS cluster.
+- For the native CI reference, `spec.harness.imageRegistryConnectorRef` selects
+  a verified image-registry connector for the test image; preserve inherited scope
+  prefixes such as `account.`. Discover/reuse it rather than inventing credentials.
 - Harness service, Dev environment, and infrastructure identifiers. The delivery workflow may create them when absent, then verify them by readback.
 - Application build context, Dockerfile, test image/command, ECR repository, deployment manifest path, and Backstage catalog path.
 - Harness CI build namespace and service account with ECR push identity and an eligible Kubernetes connector. Native codebase checkout uses the existing Harness GitHub connector; the CI reference does not use a separate Kubernetes checkout-token Secret.
