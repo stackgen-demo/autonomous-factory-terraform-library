@@ -4,6 +4,35 @@ require 'minitest/autorun'
 
 class ExternalGovernanceTest < Minitest::Test
   ROOT = File.expand_path('..', __dir__)
+  def test_service_reference_closes_image_binding_with_cd_not_ci_identity
+    current = JSON.parse(File.read(File.join(ROOT, 'contracts/autonomous-factory-v6.json')))
+    template = File.read(File.join(ROOT, current.dig('deliveryPipeline', 'serviceTemplate')))
+    service = YAML.safe_load(template).fetch('service')
+    assert_equal 'Kubernetes', service.dig('serviceDefinition', 'type')
+    spec = service.dig('serviceDefinition', 'spec')
+    manifests = spec.fetch('manifests').map { |m| m.fetch('manifest') }
+    source = manifests.find { |m| m['type'] == 'K8sManifest' }.dig('spec', 'store', 'spec')
+    assert_equal 'Commit', source.fetch('gitFetchType')
+    assert_equal '<+pipeline.variables.commit_sha>', source.fetch('commitId')
+    assert_equal ['__DEPLOYMENT_MANIFEST_PATH__'], source.fetch('paths')
+    values = manifests.find { |m| m['type'] == 'Values' }.dig('spec', 'store')
+    assert_equal 'Inline', values.fetch('type')
+    assert_equal '<+artifact.image>', YAML.safe_load(values.dig('spec', 'content')).fetch('image')
+    primary = spec.dig('artifacts', 'primary')
+    artifact = primary.fetch('sources').first
+    assert_equal primary.fetch('primaryArtifactRef'), artifact.fetch('identifier')
+    assert_equal 'Ecr', artifact.fetch('type')
+    assert_equal '__HARNESS_AWS_CONNECTOR_REF__', artifact.dig('spec', 'connectorRef')
+    assert_equal '__AWS_REGION__', artifact.dig('spec', 'region')
+    assert_equal '__ECR_REPOSITORY__', artifact.dig('spec', 'imagePath')
+    assert_equal '<+pipeline.variables.commit_sha>', artifact.dig('spec', 'tag')
+    refute_includes template, '__HARNESS_CI_AWS_CONNECTOR_REF__'
+    pipeline = YAML.safe_load(File.read(File.join(ROOT, current.dig('deliveryPipeline', 'template')))).fetch('pipeline')
+    deploy = pipeline.fetch('stages').find { |s| s.dig('stage', 'type') == 'Deployment' }
+    assert_equal primary.fetch('primaryArtifactRef'), deploy.dig('stage', 'spec', 'service', 'serviceInputs', 'serviceDefinition', 'spec', 'artifacts', 'primary', 'primaryArtifactRef')
+    assert_includes current.dig('deliveryPipeline', 'serviceBindings'), 'every manifest value'
+  end
+
   def test_completion_uses_pipeline_status_without_changing_pipeline_checks
     current = JSON.parse(File.read(File.join(ROOT, 'contracts/autonomous-factory-v6.json')))
     delivery = current.fetch('deliveryPipeline')

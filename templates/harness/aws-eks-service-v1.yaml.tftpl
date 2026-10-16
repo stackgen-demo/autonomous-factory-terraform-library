@@ -1,0 +1,44 @@
+# Reference companion to the native-CI pipeline. Substitute application settings.
+# Add Values bindings for every additional value consumed by the app manifest.
+service:
+  name: __APPLICATION_TITLE__
+  identifier: __HARNESS_SERVICE_REF__
+  orgIdentifier: __HARNESS_ORG_ID__
+  projectIdentifier: __HARNESS_PROJECT_ID__
+  serviceDefinition:
+    type: Kubernetes
+    spec:
+      manifests:
+        - manifest:
+            identifier: application_manifest
+            type: K8sManifest
+            spec:
+              store:
+                type: Github
+                spec:
+                  connectorRef: __HARNESS_GITHUB_CONNECTOR_REF__
+                  gitFetchType: Commit
+                  repoName: __GITHUB_REPOSITORY_NAME__
+                  paths:
+                    - __DEPLOYMENT_MANIFEST_PATH__
+                  commitId: <+pipeline.variables.commit_sha>
+        - manifest:
+            identifier: application_values
+            type: Values
+            spec:
+              store:
+                type: Inline
+                spec:
+                  content: |
+                    image: <+artifact.image>
+      artifacts:
+        primary:
+          primaryArtifactRef: __HARNESS_PRIMARY_ARTIFACT_REF__
+          sources:
+            - identifier: __HARNESS_PRIMARY_ARTIFACT_REF__
+              type: Ecr
+              spec:
+                connectorRef: __HARNESS_AWS_CONNECTOR_REF__
+                region: __AWS_REGION__
+                imagePath: __ECR_REPOSITORY__
+                tag: <+pipeline.variables.commit_sha>

@@ -112,6 +112,8 @@
   },
   "deliveryPipeline": {
     "template": "templates/harness/aws-eks-dev-pipeline-v4.yaml.tftpl",
+    "serviceTemplate": "templates/harness/aws-eks-service-v1.yaml.tftpl",
+    "serviceBindings": "Use the complete Kubernetes service reference for missing or explicitly authorized incomplete services. Bind the CD awsConnectorRef, region, image path, primary artifact ID and immutable manifest revision. Supply every manifest value through verified Values/overrides, including image and dependency configuration; pipeline serviceInputs alone do not create a serviceDefinition. Preserve compatible existing services.",
     "referenceUse": "For a new/reference-based pipeline, copy this pinned YAML and substitute application settings. CI owns checkout, test containers and native BuildAndPushECR; do not reintroduce a delegate ShellScript that creates Kubernetes build Jobs. Preserve compatible existing external pipelines unless a reviewed migration is authorized.",
     "defaultProject": "default",
     "definitionPathSource": "application-contract",

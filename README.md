@@ -4,6 +4,16 @@ This repository is the governed catalog used by the Autonomous Factory Aiden wor
 
 ## Agent-owned delivery contract
 
+The current agent-owned contract is `contracts/autonomous-factory-v6.json`.
+It uses external platform governance and pipeline-status completion. Its native-CI
+pipeline has a companion complete Kubernetes service reference at
+`templates/harness/aws-eks-service-v1.yaml.tftpl`: immutable manifests, ECR artifact
+configuration using the CD connector, and an explicit image Values binding.
+The agent must supply every additional value its generated manifest consumes;
+the reference does not invent application dependency values. Existing compatible
+services remain reusable. The historical v4/v5 behavior below is retained only
+for installations pinned to those contracts, not requirements for v6.
+
 `contracts/autonomous-factory-v5.json` is the agent-owned execution contract. It
 preserves the v4 capability catalog and Terraform safety policy, but replaces
 pipeline-template identity requirements with behavioral compatibility: native
