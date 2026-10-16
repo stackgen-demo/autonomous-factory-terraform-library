@@ -14,7 +14,7 @@ Required platform facts:
 - Existing Harness GitHub, AWS/ECR, and Kubernetes connector references. The AWS connector must be able to read the declared ECR repository, and the Kubernetes connector must target the declared EKS cluster.
 - Harness service, Dev environment, and infrastructure identifiers. The delivery workflow may create them when absent, then verify them by readback.
 - Application build context, Dockerfile, test image/command, ECR repository, deployment manifest path, and Backstage catalog path.
-- Build-job namespace and service account, plus the name of a Kubernetes Secret whose `token` key can clone the application repository. These are references only; never store the token in the contract.
+- Harness CI build namespace and service account with ECR push identity and an eligible Kubernetes connector. Native codebase checkout uses the existing Harness GitHub connector; the CI reference does not use a separate Kubernetes checkout-token Secret.
 
 The application repository declares these non-secret values in `.autonomous-factory/application.yaml`, validated against `contracts/application-factory-v1.schema.json`. Credentials stay in Aiden integrations, Harness secrets/connectors, and the remote runner.
 
@@ -34,7 +34,14 @@ connectivity.
 
 Use the repository's onboarding adapter to convert this contract into non-secret Terraform inputs. Do not maintain a second handwritten copy of application values.
 
-Use `templates/harness/aws-eks-dev-pipeline-v2.yaml.tftpl` as structural guidance. Adapt its build job and placeholders from the application contract; change the test image and command to match the repository. Preserve native `TerraformPlan`, `TerraformApply`, and `K8sRollingDeploy` steps, each stage's failure strategy, and the immutable `commit_sha` input. The build uses that immutable application SHA; Terraform reads the merged delivery files from the repository's default branch because the original application SHA predates the generated IaC PR. A successful rolling deployment is the delivery success criterion.
+Use the pipeline path in the pinned central contract. Agent mode's v4 reference
+is copied with application-specific placeholder substitutions, not reimplemented
+as custom build-job orchestration. It uses native Terraform Plan/Apply, a CI stage
+with managed codebase checkout, a Run test step and BuildAndPushECR, then native
+K8sRollingDeploy. Build, Terraform, manifest source and image tag use the same
+verified deployment SHA (the generated PR merge SHA when artifacts changed).
+Keep each stage fail-closed. Preserve compatible existing external pipelines;
+changing them to the reference requires a reviewed migration.
 
 Build and test run from a clean checkout. Treat `runtime.testCommand` as the test invocation, not proof that dependencies are already present. Inspect the build context and prepend its deterministic locked dependency installation when required—for example, `npm ci` when `package-lock.json` exists—before running the declared test command.
 

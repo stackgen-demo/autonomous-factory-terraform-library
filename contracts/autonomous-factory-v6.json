@@ -111,7 +111,8 @@
     }
   },
   "deliveryPipeline": {
-    "template": "templates/harness/aws-eks-dev-pipeline-v3.yaml.tftpl",
+    "template": "templates/harness/aws-eks-dev-pipeline-v4.yaml.tftpl",
+    "referenceUse": "For a new/reference-based pipeline, copy this pinned YAML and substitute application settings. CI owns checkout, test containers and native BuildAndPushECR; do not reintroduce a delegate ShellScript that creates Kubernetes build Jobs. Preserve compatible existing external pipelines unless a reviewed migration is authorized.",
     "defaultProject": "default",
     "definitionPathSource": "application-contract",
     "successCriterion": "native-kubernetes-rolling-deployment",

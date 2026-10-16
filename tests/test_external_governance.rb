@@ -27,4 +27,25 @@ class ExternalGovernanceTest < Minitest::Test
     assert_equal plan.dig('spec', 'provisionerIdentifier'), apply.dig('spec', 'provisionerIdentifier')
     assert_operator steps.index(plan), :<, steps.index(apply)
   end
+
+  def test_reference_uses_native_ci_not_a_build_job_script
+    contract = JSON.parse(File.read(File.join(ROOT, 'contracts/autonomous-factory-v6.json')))
+    template = File.read(File.join(ROOT, contract.dig('deliveryPipeline', 'template')))
+    pipeline = YAML.safe_load(template).fetch('pipeline')
+    stages = pipeline.fetch('stages').map { |s| s.fetch('stage') }
+    assert_equal %w[Custom CI Deployment], stages.map { |s| s.fetch('type') }
+    ci = stages[1].fetch('spec')
+    assert_equal true, ci.fetch('cloneCodebase')
+    assert_equal 'KubernetesDirect', ci.dig('infrastructure', 'type')
+    assert_equal '__BUILD_SERVICE_ACCOUNT__', ci.dig('infrastructure', 'spec', 'serviceAccountName')
+    assert_equal %w[Run BuildAndPushECR], ci.dig('execution', 'steps').map { |s| s.dig('step', 'type') }
+    assert_equal 'commitSha', pipeline.dig('properties', 'ci', 'codebase', 'build', 'type')
+    assert_equal '<+pipeline.variables.commit_sha>', pipeline.dig('properties', 'ci', 'codebase', 'build', 'spec', 'commitSha')
+    build = ci.dig('execution', 'steps', 1, 'step', 'spec')
+    assert_equal ['<+pipeline.variables.commit_sha>'], build.fetch('tags')
+    assert_equal '__HARNESS_AWS_CONNECTOR_REF__', build.fetch('connectorRef')
+    refute_match(/ShellScript|kubectl|kind: Job|GITHUB_TOKEN|kaniko-project/, template)
+    stages.each { |s| assert_equal 'MarkAsFailure', s.dig('failureStrategies', 0, 'onFailure', 'action', 'type') }
+    assert_includes contract.dig('deliveryPipeline', 'referenceUse'), 'copy this pinned YAML'
+  end
 end

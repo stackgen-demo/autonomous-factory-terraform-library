@@ -1,0 +1,183 @@
+pipeline:
+  name: __APPLICATION_TITLE__ Dev Delivery
+  identifier: __HARNESS_PIPELINE_ID__
+  projectIdentifier: __HARNESS_PROJECT_ID__
+  orgIdentifier: __HARNESS_ORG_ID__
+  description: Native Terraform provisioning, Harness CI build/push and Kubernetes rolling deployment for Dev.
+  tags:
+    managed-by: autonomous-factory
+    target: dev
+  properties:
+    ci:
+      codebase:
+        connectorRef: __HARNESS_GITHUB_CONNECTOR_REF__
+        repoName: __GITHUB_REPOSITORY_NAME__
+        build:
+          type: commitSha
+          spec:
+            commitSha: <+pipeline.variables.commit_sha>
+        resources:
+          limits:
+            memory: 256Mi
+            cpu: "250m"
+  variables:
+    - name: commit_sha
+      type: String
+      required: true
+      value: <+input>
+    - name: delivery_mode
+      type: String
+      required: true
+      value: <+input>
+    - name: capability
+      type: String
+      required: false
+      value: none
+  stages:
+    - stage:
+        name: Terraform Provisioning
+        identifier: terraform_provisioning
+        type: Custom
+        spec:
+          execution:
+            steps:
+              - step:
+                  name: Terraform Plan
+                  identifier: terraform_plan
+                  type: TerraformPlan
+                  timeout: 15m
+                  spec:
+                    provisionerIdentifier: __TERRAFORM_PROVISIONER_ID__
+                    delegateSelectors: [__HARNESS_DELEGATE_SELECTOR__]
+                    configuration:
+                      command: Apply
+                      skipRefreshCommand: false
+                      exportTerraformPlanJson: true
+                      configFiles:
+                        store:
+                          type: Github
+                          spec:
+                            connectorRef: __HARNESS_GITHUB_CONNECTOR_REF__
+                            repoName: __GITHUB_REPOSITORY_NAME__
+                            gitFetchType: Commit
+                            commitId: <+pipeline.variables.commit_sha>
+                            folderPath: __TERRAFORM_ROOT__
+                        moduleSource:
+                          useConnectorCredentials: true
+                      secretManagerRef: harnessSecretManager
+                      skipStateStorage: false
+              - step:
+                  name: Terraform Apply
+                  identifier: terraform_apply
+                  type: TerraformApply
+                  timeout: 20m
+                  spec:
+                    provisionerIdentifier: __TERRAFORM_PROVISIONER_ID__
+                    delegateSelectors: [__HARNESS_DELEGATE_SELECTOR__]
+                    configuration:
+                      type: InheritFromPlan
+        failureStrategies:
+          - onFailure:
+              errors:
+                - AllErrors
+              action:
+                type: MarkAsFailure
+    - stage:
+        name: Build and Publish
+        identifier: build_and_publish
+        type: CI
+        spec:
+          cloneCodebase: true
+          infrastructure:
+            type: KubernetesDirect
+            spec:
+              connectorRef: __HARNESS_KUBERNETES_CONNECTOR_REF__
+              namespace: __BUILD_NAMESPACE__
+              serviceAccountName: __BUILD_SERVICE_ACCOUNT__
+              automountServiceAccountToken: true
+              nodeSelector: {}
+              os: Linux
+          execution:
+            steps:
+              - step:
+                  name: Test Application
+                  identifier: test_application
+                  type: Run
+                  timeout: 10m
+                  spec:
+                    image: __TEST_IMAGE__
+                    shell: Sh
+                    command: |
+                      set -eu
+                      cd __BUILD_CONTEXT__
+                      __TEST_COMMAND__
+                    resources:
+                      limits:
+                        memory: 512Mi
+                        cpu: "500m"
+              - step:
+                  name: Build and Push to ECR
+                  identifier: build_and_push_ecr
+                  type: BuildAndPushECR
+                  timeout: 15m
+                  spec:
+                    connectorRef: __HARNESS_AWS_CONNECTOR_REF__
+                    region: __AWS_REGION__
+                    account: "__AWS_ACCOUNT_ID__"
+                    imageName: __ECR_REPOSITORY__
+                    tags:
+                      - <+pipeline.variables.commit_sha>
+                    dockerfile: __DOCKERFILE__
+                    context: __BUILD_CONTEXT__
+                    caching: false
+                    resources:
+                      limits:
+                        memory: 1Gi
+                        cpu: "1000m"
+        failureStrategies:
+          - onFailure:
+              errors:
+                - AllErrors
+              action:
+                type: MarkAsFailure
+    - stage:
+        name: Deploy to Dev
+        identifier: deploy_to_dev
+        type: Deployment
+        spec:
+          deploymentType: Kubernetes
+          service:
+            serviceRef: __HARNESS_SERVICE_REF__
+            serviceInputs:
+              serviceDefinition:
+                type: Kubernetes
+                spec:
+                  artifacts:
+                    primary:
+                      primaryArtifactRef: __HARNESS_PRIMARY_ARTIFACT_REF__
+                      sources:
+                        - identifier: __HARNESS_PRIMARY_ARTIFACT_REF__
+                          type: Ecr
+                          spec:
+                            tag: <+pipeline.variables.commit_sha>
+          environment:
+            environmentRef: __HARNESS_ENVIRONMENT_REF__
+            deployToAll: false
+            infrastructureDefinitions:
+              - identifier: __HARNESS_INFRASTRUCTURE_REF__
+          execution:
+            steps:
+              - step:
+                  name: Native Kubernetes Rolling Deploy
+                  identifier: native_kubernetes_rolling_deploy
+                  type: K8sRollingDeploy
+                  timeout: 15m
+                  spec:
+                    skipDryRun: false
+                    pruningEnabled: false
+        failureStrategies:
+          - onFailure:
+              errors:
+                - AllErrors
+              action:
+                type: MarkAsFailure
