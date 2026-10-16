@@ -35,7 +35,7 @@
         "runtime": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["buildContext", "dockerfile", "testCommand", "testImage", "buildServiceAccount", "githubTokenSecret"],
+          "required": ["buildContext", "dockerfile", "testCommand", "testImage", "buildServiceAccount"],
           "properties": {
             "buildContext": { "type": "string" },
             "dockerfile": { "type": "string" },
@@ -47,7 +47,7 @@
             "ecrRepository": { "type": "string" },
             "buildNamespace": { "type": "string", "default": "harness-delegate-ng" },
             "buildServiceAccount": { "type": "string" },
-            "githubTokenSecret": { "type": "string" }
+            "githubTokenSecret": { "type": "string", "description": "Legacy build-job checkout only. Native Harness CI uses the GitHub connector and does not require this Secret." }
           }
         },
         "aws": {

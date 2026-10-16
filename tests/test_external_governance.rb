@@ -47,5 +47,7 @@ class ExternalGovernanceTest < Minitest::Test
     refute_match(/ShellScript|kubectl|kind: Job|GITHUB_TOKEN|kaniko-project/, template)
     stages.each { |s| assert_equal 'MarkAsFailure', s.dig('failureStrategies', 0, 'onFailure', 'action', 'type') }
     assert_includes contract.dig('deliveryPipeline', 'referenceUse'), 'copy this pinned YAML'
+    schema = JSON.parse(File.read(File.join(ROOT, 'contracts/application-factory-v1.schema.json')))
+    refute_includes schema.dig('properties', 'spec', 'properties', 'runtime', 'required'), 'githubTokenSecret'
   end
 end
