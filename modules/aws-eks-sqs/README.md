@@ -36,3 +36,37 @@ assert configured policy-document actions/resources, encryption, DLQ settings,
 and identity bindings; they do not claim live IAM authorization or exercise a
 real key policy. The fixture verifies the AWS v5 caller contract. STA-400 is a
 sandbox rehearsal ending at a draft PR, not an apply or release.
+
+## Checkout worker consumer guard (STA-403)
+
+Set both flags for a checkout worker. `require_consumer_access` is a non-nullable
+boolean defaulting to `false`, so existing producer-only and consumer callers
+keep their behavior. A resource precondition rejects the combination
+`require_consumer_access = true` and `enable_consumer_access = false` during
+planning. The module does not infer workload identity: callers must opt in for
+checkout workers. This guard checks configuration, not live IAM authorization.
+
+```hcl
+module "checkout_worker_queue" {
+  source = "./modules/aws-eks-sqs"
+
+  queue_name              = "orders"
+  cluster_name            = "checkout-sandbox"
+  namespace               = "checkout"
+  service_account_name    = "checkout-worker"
+  pod_identity_role_arn   = "arn:aws:iam::123456789012:role/checkout-worker"
+  enable_consumer_access  = true
+  require_consumer_access = true
+}
+```
+
+The runnable `tests/fixtures/checkout` caller enables both flags with AWS
+`~> 5.0`, locked to 5.100.0. Tests cover unchanged producer-only defaults,
+consumer access with and without the guard, and the rejected combination using
+`expect_failures`. Existing encryption, redrive, DLQ and identity assertions stay
+in place. Test `apply` commands use a mocked provider, not an AWS deployment.
+
+Source comparison: `checkout-sqs-baseline-v1.0.0` retains the same optional KMS
+key handling, key-scoped IAM permissions, queues, role binding and outputs.
+`main` already adds opt-in consumer access and AWS v5 tests; this change keeps
+those additions and the deployed settings. No public input or output is removed.

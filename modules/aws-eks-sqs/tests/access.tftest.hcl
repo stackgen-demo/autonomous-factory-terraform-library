@@ -99,3 +99,28 @@ run "encrypted_consumer" {
     error_message = "Keep existing application identity binding and policy attachment."
   }
 }
+
+run "checkout_consumer_required" {
+  command = apply
+
+  variables {
+    require_consumer_access = true
+    enable_consumer_access  = true
+  }
+
+  assert {
+    condition     = toset(one(data.aws_iam_policy_document.application_queue_access.statement).actions) == toset(["sqs:GetQueueAttributes", "sqs:SendMessage", "sqs:ReceiveMessage", "sqs:DeleteMessage"])
+    error_message = "A guarded checkout worker must retain producer and consumer permissions."
+  }
+}
+
+run "checkout_consumer_disabled_rejected" {
+  command = plan
+
+  variables {
+    require_consumer_access = true
+    enable_consumer_access  = false
+  }
+
+  expect_failures = [aws_sqs_queue.this]
+}

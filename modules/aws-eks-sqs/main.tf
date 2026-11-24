@@ -14,6 +14,13 @@ resource "aws_sqs_queue" "this" {
     maxReceiveCount     = 5
   })
   tags = var.tags
+
+  lifecycle {
+    precondition {
+      condition     = !var.require_consumer_access || var.enable_consumer_access
+      error_message = "Checkout workers requiring consumer access must set enable_consumer_access = true."
+    }
+  }
 }
 
 data "aws_iam_policy_document" "application_queue_access" {
