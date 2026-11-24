@@ -70,3 +70,20 @@ Source comparison: `checkout-sqs-baseline-v1.0.0` retains the same optional KMS
 key handling, key-scoped IAM permissions, queues, role binding and outputs.
 `main` already adds opt-in consumer access and AWS v5 tests; this change keeps
 those additions and the deployed settings. No public input or output is removed.
+
+## Targeted Pod Identity consumer guard (STA-406)
+
+The EKS Pod Identity association enforces the same opt-in consumer requirement
+as the queue. A plan targeting only
+`aws_eks_pod_identity_association.application` therefore also rejects
+`require_consumer_access = true` with `enable_consumer_access = false`, even
+though the queue is not in that plan. The queue precondition remains in place.
+Producer-only defaults and all valid configurations retain their existing
+settings; no inputs, outputs or IAM permissions change.
+
+The mocked AWS v5 module tests retain the existing full-plan rejection case
+and add `checkout_consumer_disabled_targeted_association_rejected`, using
+`plan_options.target` and expecting the association precondition to fail.
+The AWS v5 checkout fixture remains constrained to `~> 5.0` and locked to 5.100.0.
+These are configuration checks, not live IAM authorization or a recommendation
+to use targeted plans for normal deployments.
