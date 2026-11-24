@@ -52,5 +52,12 @@ resource "aws_eks_pod_identity_association" "application" {
   namespace       = var.namespace
   service_account = var.service_account_name
   role_arn        = var.pod_identity_role_arn
+
+  lifecycle {
+    precondition {
+      condition     = !var.require_consumer_access || var.enable_consumer_access
+      error_message = "Checkout workers requiring consumer access must set enable_consumer_access = true."
+    }
+  }
 }
 

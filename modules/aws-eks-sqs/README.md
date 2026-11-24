@@ -70,3 +70,19 @@ Source comparison: `checkout-sqs-baseline-v1.0.0` retains the same optional KMS
 key handling, key-scoped IAM permissions, queues, role binding and outputs.
 `main` already adds opt-in consumer access and AWS v5 tests; this change keeps
 those additions and the deployed settings. No public input or output is removed.
+
+## Targeted Pod Identity consumer guard (STA-404)
+
+The EKS Pod Identity association now enforces the same consumer precondition as
+the queue. A plan targeting only `aws_eks_pod_identity_association.application`
+therefore rejects `require_consumer_access = true` with
+`enable_consumer_access = false`, even though the queue is outside that plan.
+Producer-only defaults and all valid configurations remain unchanged. Both
+preconditions check configuration only; they do not prove live IAM access.
+
+The mocked AWS v5 regression test uses `plan_options.target` to select only the
+association and expects its precondition to fail. The existing full-plan test
+expects both guards to fail. Existing tests and the checkout fixture retain
+`hashicorp/aws ~> 5.0`, locked to 5.100.0. The baseline tag's optional KMS,
+key-scoped permissions, queue settings, identity bindings and outputs remain
+unchanged; main's opt-in consumer behavior and queue guard are retained.
