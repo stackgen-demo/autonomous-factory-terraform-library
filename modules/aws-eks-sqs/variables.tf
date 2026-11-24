@@ -23,3 +23,9 @@ variable "tags" {
   default = {}
 }
 
+
+variable "kms_key_arn" {
+  description = "Customer-managed KMS key ARN for the queue and dead-letter queue."
+  type        = string
+  default     = null
+}
