@@ -43,8 +43,12 @@ Set both flags for a checkout worker. `require_consumer_access` is a non-nullabl
 boolean defaulting to `false`, so existing producer-only and consumer callers
 keep their behavior. A resource precondition rejects the combination
 `require_consumer_access = true` and `enable_consumer_access = false` during
-planning. The module does not infer workload identity: callers must opt in for
-checkout workers. This guard checks configuration, not live IAM authorization.
+planning. Both the queue and EKS Pod Identity association enforce this guard,
+so a plan targeting only `aws_eks_pod_identity_association.application` also
+rejects the invalid combination. A mocked AWS v5 plan test uses
+`plan_options.target` to cover that association-only path (STA-407).
+The module does not infer workload identity: callers must opt in for checkout
+workers. This guard checks configuration, not live IAM authorization.
 
 ```hcl
 module "checkout_worker_queue" {
