@@ -122,5 +122,21 @@ run "checkout_consumer_disabled_rejected" {
     enable_consumer_access  = false
   }
 
-  expect_failures = [aws_sqs_queue.this]
+  expect_failures = [aws_sqs_queue.this, aws_eks_pod_identity_association.application]
+}
+
+run "checkout_consumer_disabled_targeted_association_rejected" {
+  command = plan
+
+  plan_options {
+    target = [aws_eks_pod_identity_association.application]
+  }
+
+  variables {
+    require_consumer_access = true
+    enable_consumer_access  = false
+  }
+
+  # Targeting only the association skips the queue and its precondition.
+  expect_failures = [aws_eks_pod_identity_association.application]
 }
