@@ -122,5 +122,22 @@ run "checkout_consumer_disabled_rejected" {
     enable_consumer_access  = false
   }
 
-  expect_failures = [aws_sqs_queue.this]
+  expect_failures = [aws_sqs_queue.this, aws_eks_pod_identity_association.application]
+}
+
+# Targeting the association skips the queue guard; the identity binding must
+# independently reject a checkout worker without consumer permissions.
+run "checkout_targeted_pod_identity_consumer_disabled_rejected" {
+  command = plan
+
+  plan_options {
+    target = [aws_eks_pod_identity_association.application]
+  }
+
+  variables {
+    require_consumer_access = true
+    enable_consumer_access  = false
+  }
+
+  expect_failures = [aws_eks_pod_identity_association.application]
 }
