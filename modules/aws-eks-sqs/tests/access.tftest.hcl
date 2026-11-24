@@ -99,3 +99,32 @@ run "encrypted_consumer" {
     error_message = "Keep existing application identity binding and policy attachment."
   }
 }
+
+run "required_consumer_access" {
+  command = apply
+
+  variables {
+    require_consumer_access = true
+    enable_consumer_access  = true
+  }
+
+  assert {
+    condition     = length(data.aws_iam_policy_document.application_queue_access.statement) == 1 && toset(one(data.aws_iam_policy_document.application_queue_access.statement).actions) == toset(["sqs:GetQueueAttributes", "sqs:SendMessage", "sqs:ReceiveMessage", "sqs:DeleteMessage"])
+    error_message = "A required consumer must retain the existing producer and consumer actions."
+  }
+  assert {
+    condition     = toset(one(data.aws_iam_policy_document.application_queue_access.statement).resources) == toset([aws_sqs_queue.this.arn])
+    error_message = "Required consumer permissions must remain scoped to this queue."
+  }
+}
+
+run "reject_required_consumer_without_access" {
+  command = plan
+
+  variables {
+    require_consumer_access = true
+    enable_consumer_access  = false
+  }
+
+  expect_failures = [aws_iam_role_policy.application_queue_access]
+}

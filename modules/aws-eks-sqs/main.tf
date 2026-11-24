@@ -38,6 +38,13 @@ resource "aws_iam_role_policy" "application_queue_access" {
   name   = "${var.queue_name}-access"
   role   = element(reverse(split("/", var.pod_identity_role_arn)), 0)
   policy = data.aws_iam_policy_document.application_queue_access.json
+
+  lifecycle {
+    precondition {
+      condition     = !var.require_consumer_access || var.enable_consumer_access
+      error_message = "Checkout workers requiring consumer access must set enable_consumer_access = true."
+    }
+  }
 }
 
 resource "aws_eks_pod_identity_association" "application" {
